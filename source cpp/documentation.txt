@@ -133,6 +133,53 @@ _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-
 																		Virtual Machine
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 
+[INSTRUCTION FORMAT] 
+
+ FORMAT 0 EX: (1 operand)
+                INC MEM
+                INC REG
+
+                size & struct : [FLAG] [AVAL] [5 bytes] 
+                
+             FORMAT 1 EX: (2 operands)
+                MOV REG, VAL
+                MOV REG, REG
+                MOV REG, MEM
+
+                MOV depth MEM, VAL
+                MOV MEM, REG
+                MOV depth MEM, MEM
+                MOV MEM, depth MEM
+
+                size & struct :  [FLAG] [AVAL] [FLAG] [BVAL]  [11 bytes]
+
+                Flag is a byte as MODREG x86 system :
+                
+                0 1 2 3 4 5 6 7 8
+
+                FIRST 3 bits indicate source/dest type : REGISTER, MEMORY ADDRESS OR IMMEDIATE VALUE. 
+                NEXT  3 bits indicate Depth : 8bits, 16bits, 32bits. 
+                LAST  2 bits indicates POS (H/L) if 8bits 
+
+                SO instruction structure for 2 operands is  : 
+                Most of the time instruction is eleven byte. 
+
+                OPCODE  FLAG-A   A     FLAG-B   B
+                ( 1b )   (1b)  (1-4b)   (1b)  (1-4b)
+
+[PROCESSING INSTRUCTION]
+
+Get OPCODE at Program Counter Value.
+DEPENDING OF OPCODE	(map in memory either one operand (bit 0) , either 2 operands (bit 1)), GET OPERAND AND FLAGOPERAND
+DETECT REG OR MEM OR IMMEDIATE . RETURN ERROR IF IMMEDIATE AND 2 OPERANDS FOR FLAG ONE
+GET ADDRESS A
+REDO WITH B if 2 operands
+GET ADDRESS B
+GET DEPTH
+DO INSTRUCTION
+ADD PC COUNTER DEPENDING OF OPERANDS NUMBER
+
+limitiation : NO PREFIX, FIX OPERANDS SIZE PER OPCODE.
 
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 																			Issues 
