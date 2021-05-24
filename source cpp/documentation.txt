@@ -201,6 +201,19 @@ limitiation : NO PREFIX, FIX OPERANDS SIZE PER OPCODE.
  Load Operands into arguments.
  Perform OPCODE instruction from argument.  
  Add PC Counter depending of operands number.
+ 
+INDIRECT ADDRESSING : 
+
+            Indirect/Direct means either MEM will be set with VALUE or *VALUE (pointer)
+
+            example: INC IS 0x02. ADD IS 0x00. SUB IS 0x01.  VAR IS AT 0xA.  EAX is 0X0. 
+            INC [VAR]    -> DIRECT: binary                                 -> 0x02 f 0xA 
+                            will perform:  *(ram+0x02) ++; 
+            INC [EAX]    -> INDIRECT                                       -> 0x02 f 0x0
+                            will perform:  *(ram+*(ram+0x0)) ++; 
+            this one is not a special. assembler just do the work for us : 
+            INC [EAX+6]  -> INDIRECT                                       -> 0x00 f 0x0 0x6  && 0x02 f 0x0 &&  0x01 f 0x0 0x6                
+                            will perform: *(ram+0x00) += 6; *(ram+*(ram+0x0)) ++; *(ram+0x00) -= 6;
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 																			Issues 
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
