@@ -192,7 +192,7 @@ limitiation : NO PREFIX, FIX OPERANDS SIZE PER OPCODE.
               OPCODE  flag MEM VALUE
               OPCODE  flag MEM MEM
 
- flag is 8 bit ( 0 1 2 3 4 ) : 8-bit | 16-bit | 32-bit | MEM/IMM | H/L | 0 | 0 | 0
+ flag is 8 bit ( 0 1 2 3 4 ) :  16-bit | 32-bit | H/L | MEM/IMM | I/D [A] | I/D [B] | 0 | 0
  Last 3 bits have no use. 
               
  PROCESSING INSTRUCTION:
@@ -205,14 +205,29 @@ limitiation : NO PREFIX, FIX OPERANDS SIZE PER OPCODE.
 INDIRECT ADDRESSING : 
 
             Indirect/Direct means either MEM will be set with VALUE or *VALUE (pointer)
+	    
+	    example: INC IS 0x02. ADD IS 0x00. SUB IS 0x01.  VAR IS AT 0xA.  EAX IS AT 0X0.  ADD IS 0x03
 
-            example: INC IS 0x02. ADD IS 0x00. SUB IS 0x01.  VAR IS AT 0xA.  EAX is 0X0. 
-            INC [VAR]    -> DIRECT: binary                                 -> 0x02 f 0xA 
-                            will perform:  *(ram+0x02) ++; 
-            INC [EAX]    -> INDIRECT                                       -> 0x02 f 0x0
-                            will perform:  *(ram+*(ram+0x0)) ++; 
-            this one is not a special. assembler just do the work for us : 
-            INC [EAX+6]  -> INDIRECT                                       -> 0x00 f 0x0 0x6  && 0x02 f 0x0 &&  0x01 f 0x0 0x6                
+            INC dword [EAX]    -> INDIRECT                                 -> 0x02 0x24 0x0 (flag 0100100)
+                            will perform:  *(ram+*(ram+0x0)) ++ 
+              
+            INC EAX      -> DIRECT                                         -> 0x02 0x20 0x0 (flag 0100000)
+                            will perform:  *(ram+0x0) ++
+
+            INC dword [VAR]    -> INDIRECT : binary                        -> 0x02 0x24 0xA (flag 0100100)
+                            will perform:  *(ram+*(ram+0xA)) ++
+			    
+	    (here depth has to be set for non register address )
+            INC dword VAR   - > DIRECT                                     -> 0x02 0x20 0xA  (flag 01000000) 
+                            will perform:  *(ram+0xA)) ++ 
+	    
+	    ADD EAX, [VAR]                                              ->   0x03 0x44 0x0 0xA (flag 01000100 )
+	     		    will perform:  *(ram+0x0)) +=  *(ram+*(ram+0xA))
+	    ADD EAX, VAR                                                ->   0x03 0x20 0x0 0xA (flag 01000000 ) 
+			    will perform:  *(ram+0x0)) +=  *(ram+0xA)
+			    
+            ( this one is not proccess by the machine. assembler just do the thing for us ) 
+            INC word [EAX+6]  ->  0x00 0x50 0x0 0x6  |||||||||  0x02 0x88 0x0 |||||||||  0x01 0x50 0x0 0x6   
                             will perform: *(ram+0x00) += 6; *(ram+*(ram+0x0)) ++; *(ram+0x00) -= 6;
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 																			Issues 
