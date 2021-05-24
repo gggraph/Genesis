@@ -133,7 +133,7 @@ _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-
 																		Virtual Machine
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 
-[INSTRUCTION FORMAT] 
+[INSTRUCTION FORMAT A] 
 
  FORMAT 0 EX: (1 operand)
                 INC MEM
@@ -141,7 +141,7 @@ _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-
 
                 size & struct : [FLAG] [AVAL] [5 bytes] 
                 
-             FORMAT 1 EX: (2 operands)
+ FORMAT 1 EX: (2 operands)
                 MOV REG, VAL
                 MOV REG, REG
                 MOV REG, MEM
@@ -167,7 +167,7 @@ _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-
                 OPCODE  FLAG-A   A     FLAG-B   B
                 ( 1b )   (1b)  (1-4b)   (1b)  (1-4b)
 
-[PROCESSING INSTRUCTION]
+PROCESSING INSTRUCTION:
 
 Get OPCODE at Program Counter Value.
 DEPENDING OF OPCODE	(map in memory either one operand (bit 0) , either 2 operands (bit 1)), GET OPERAND AND FLAGOPERAND
@@ -181,6 +181,26 @@ ADD PC COUNTER DEPENDING OF OPERANDS NUMBER
 
 limitiation : NO PREFIX, FIX OPERANDS SIZE PER OPCODE.
 
+[INSTRUCTION FORMAT B]  / NO REGISTER. REGISTER IS MEMORY. (BETTER VM ARCHITECTURE) LIGHTER. FASTER.
+
+ opr   ~#0
+ 	      OPCODE 
+ opr   ~#1 
+              OPCODE  flag MEM
+
+ opr   ~#2
+              OPCODE  flag MEM VALUE
+              OPCODE  flag MEM MEM
+
+ flag is 8 bit ( 0 1 2 3 4 ) : 8-bit | 16-bit | 32-bit | MEM/IMM | H/L | 0 | 0 | 0
+ Last 3 bits have no use. 
+              
+ PROCESSING INSTRUCTION:
+ Get  OPCODE at Program Counter Value & read flag state. 
+ Get  Operand numbers from (memory map (either bit 0 either bit 1) .
+ Load Operands into arguments.
+ Perform OPCODE instruction from argument.  
+ Add PC Counter depending of operands number.
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 																			Issues 
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
