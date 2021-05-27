@@ -271,6 +271,8 @@ bool Run()
 					*(addr1) = *(addr2);
 			break;
 		}
+		// update EIP
+		*(MEM + 0x20) += bl;
 	}
 	return true;
 }
