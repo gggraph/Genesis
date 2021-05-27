@@ -23,7 +23,7 @@ unsigned char MEM[MEM_SIZE];
 		   0x?            STACK
 
 	   */
-const int REGmat[] =
+const char REGmat[] =
 {
 	0x00, 0x02, 0x00, // A
 	0x08, 0x0A, 0x08, // C
@@ -37,7 +37,7 @@ const int REGmat[] =
 };
 
 
-const int SIBi [ ]= 
+const char SIBID []=
 {
 	0x00, //EAX
 	0x08, //ECX
@@ -47,6 +47,28 @@ const int SIBi [ ]=
 	0x14, //EBP
 	0x18, //ESI
 	0x1C  //EDI
+};
+
+/* NOT COMPLETE */
+const char OPMAP[] =
+{
+	1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
 };
 
 bool InitVM(unsigned char * cs, uint32_t length)
@@ -137,7 +159,7 @@ bool Run()
 					return;
 
 				
-				INDEXADDR = MEM + SIBi[index];
+				INDEXADDR = MEM + SIBID[index];
 
 				SetBit(7, IsBitSet(7, SIB), &base);
 				SetBit(6, IsBitSet(6, SIB), &base);
@@ -152,7 +174,7 @@ bool Run()
 				}
 				else
 				{
-					BASEADDR = MEM + SIBi[index];
+					BASEADDR = MEM + SIBID[index];
 				}
 				
 				RMADDR = (unsigned char * ) *(BASEADDR)+ (*(INDEXADDR) * scale);
@@ -190,47 +212,65 @@ bool Run()
 			RMADDR = (unsigned char *) *(RMADDR)+disp32;
 		}
 		unsigned char * addr1, *addr2;
-		/*
-		if (d)
-			addr1 = GetREGaddr(REG, s, false); // 16bit mode always false if not 0x66 prefix
-		else
-			addr2 = GetREGaddr(REG, s, false); // 16bit mode always false if not 0x66 prefix
-		*/
-		int val1, int val2;
+		
 
 		if (d) 
 		{
 			// dest : REG, source : R/M
-			val1 = *(REGADDR);
-			val2 = *(RMADDR);
+			addr1 = REGADDR;
+			addr2 = RMADDR ;
 		}
 		else
 		{
 			// dest : R/M, source : REG
-			val2 = *(REGADDR);
-			val1 = *(RMADDR);
+			addr2 = REGADDR;
+			addr1 = RMADDR;
 		}
 
 		// imm mode 
+		int immVal; // usefull if immediate mode
 		if ( imm )
 		{
 
 			if ( (s && d == 0)  || !s) 
 			{
 				char  imm8 = *(MEM + *(MEM + 0x20) + 2);
-				val2 = (int)imm8;
+				immVal = (int)imm8;
 			}
 			else 
 			{
 				int   imm32 = *(MEM + *(MEM + 0x20) + 2);
 				// short imm16 = *(MEM + *(MEM + 0x20) + 2); no 16bit mode
-				val2 = imm32;
+				immVal = imm32;
 			}
 			
 		}
+		// OPERAND TYPE IS :
+		// /0
+		// MEM MEM
+		// MEM IMM
+		// MEM
+		// IMM
+		
 
-		// RUN INSTRUCTION ( BY OPCODE MAPPING ) ( and USE A SWITCH CASE ) PER BLOCK
-		// :)
+		// RUN INSTRUCTION ( BY OPCODE MAP (16*16 mat) )( and get INSTRUCTION IDENTIFIER ) 
+		char OPID = OPMAP[OPCODE];
+
+		switch (OPID)
+		{
+			case 1: // ADD
+				if (imm)
+					*(addr1) += immVal;
+				else
+					*(addr1) += *(addr2);
+			break; 
+			case 2: // MOV
+				if (imm)
+					*(addr1) = immVal;
+				else
+					*(addr1) = *(addr2);
+			break;
+		}
 	}
 	return true;
 }
