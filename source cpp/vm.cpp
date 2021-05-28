@@ -1,5 +1,5 @@
 
-#include "Utils.h"
+#include "vm.h"
 
 #define MEM_SIZE 32000 
 
@@ -49,7 +49,6 @@ const char SIBID []=
 	0x1C  //EDI
 };
 
-/* NOT COMPLETE */
 const char OPMAP[] =
 {
 	1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -78,21 +77,31 @@ bool InitVM(unsigned char * cs, uint32_t length)
 	*(MEM + 0X20) = 0x25;
 	// ESP is initialize at 0x25 + code length
 	UintToBytes(0x25 + length, MEM + 0x10);
-	// Copy code
-	memcmp(MEM + 0x25, cs, length);
+	// Copying code seems not working ...
+	memcpy(MEM + 0x25, cs, length);
 	return true;
 }
 
-bool Run()
+bool RunVM()
 {
 	while (1)
 	{
-		
+
 		uint32_t bl;
 		bl = 2; // instruction size. add 1 if constant or sib or disp. add 2 if sib+disp
 		// [0] first check prefix offset
 		// [1] Get OPCODE
-		unsigned char  OPCODE  = *(MEM + *(MEM + 0x20));
+		unsigned char  OPCODE = *(MEM + *(MEM + 0x20)); 
+		//std::cout << "OPCODE : " <<(int)OPCODE << std::endl;
+		
+		// HALT TEST
+		if (OPCODE == 0xFF)
+			return true;
+
+		// [0000] should also check if 
+
+
+
 		// [1b] 
 		// depending of opcode jump
 		// [2] GET OPCODE info
@@ -156,7 +165,7 @@ bool Run()
 				SetBit(5, IsBitSet(2, SIB), &index);
 
 				if (index == 5) // illegal...
-					return;
+					return false;
 
 				
 				INDEXADDR = MEM + SIBID[index];
@@ -231,17 +240,20 @@ bool Run()
 		int immVal; // usefull if immediate mode
 		if ( imm )
 		{
-
+			addr1 = RMADDR;
+			//std::cout << "is imm" << std::endl;
 			if ( (s && d == 0)  || !s) 
 			{
 				char  imm8 = *(MEM + *(MEM + 0x20) + 2);
 				immVal = (int)imm8;
+				bl++;
 			}
 			else 
 			{
 				int   imm32 = *(MEM + *(MEM + 0x20) + 2);
 				// short imm16 = *(MEM + *(MEM + 0x20) + 2); no 16bit mode
 				immVal = imm32;
+				bl += 4;
 			}
 			
 		}
@@ -271,8 +283,10 @@ bool Run()
 					*(addr1) = *(addr2);
 			break;
 		}
+		//std::cout << "BOFF : " <<  bl << std::endl;
 		// update EIP
 		*(MEM + 0x20) += bl;
+		
 	}
 	return true;
 }
@@ -290,6 +304,7 @@ unsigned char *  GetREGaddr(unsigned char val, bool s, bool b16)
 		else
 			y = 2;
 	}
+	std::cout << "REG at MEM -> " << (int)REGmat[x + y] << std::endl;
 	return MEM + REGmat[x + y];
 
 }
@@ -297,9 +312,9 @@ unsigned char *  GetREGaddr(unsigned char val, bool s, bool b16)
 void PrintReg()
 {
 
-	std::cout << "EAX : " << *(MEM + 0x00) << std::endl;
-	std::cout << "EBX : " << *(MEM + 0x04) << std::endl;
-	std::cout << "ECX : " << *(MEM + 0x08) << std::endl;
-	std::cout << "EDX : " << *(MEM + 0x0C) << std::endl;
+	std::cout << "EAX : " << (int)*(MEM + 0x00) << std::endl;
+	std::cout << "EBX : " << (int)*(MEM + 0x04) << std::endl;
+	std::cout << "ECX : " << (int)*(MEM + 0x08) << std::endl;
+	std::cout << "EDX : " << (int)*(MEM + 0x0C) << std::endl;
 
 }
