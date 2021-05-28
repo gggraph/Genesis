@@ -53,7 +53,7 @@ const char OPMAP[] =
 {
 	1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -86,8 +86,15 @@ bool RunVM()
 {
 	while (1)
 	{
+		uint32_t bl, op_off, mrr_off, sib_off, disp_off, const_off; // [ IMPROVMENT ] SHOULD BE ONLY ONE INC OFFSET USED
+		
+		op_off    = 0; // ++ if prefix
+		mrr_off   = 1; // ++ if prefix
+		sib_off   = 2; // ++ if prefix
+		disp_off  = 2; // ++ if prefix, ++ if sib 
+		const_off = 2; // ++ if prefix, ++ if sib, ++ if disp
 
-		uint32_t bl;
+
 		bl = 2; // instruction size. add 1 if constant or sib or disp. add 2 if sib+disp
 		// [0] first check prefix offset
 		// [1] Get OPCODE
@@ -109,7 +116,7 @@ bool RunVM()
 		bool d       = (IsBitSet(6, OPCODE));
 		bool s       = (IsBitSet(7, OPCODE));
 		// [1] GET MODREGXM
-		unsigned char MODREGXM = *(MEM + *(MEM + 0x20) + 1 );
+		unsigned char MODREGXM = *(MEM + *(MEM + 0x20) + mrr_off );
 
 		unsigned char REG    = 0;
 		unsigned char MOD    = 0;
@@ -143,9 +150,12 @@ bool RunVM()
 			// SIB MODE ( not called CISC for nothing ...) 
 			if (RM == 5) 
 			{
+				// update offs
+				disp_off++; 
+				const_off++;
 				bl++;
 				// we update R/M with SIB MODE
-				unsigned char SIB = *(MEM + *(MEM + 0x20) + 2);
+				unsigned char SIB = *(MEM + *(MEM + 0x20) + sib_off);
 				unsigned char scale = 0;
 				unsigned char index = 0; 
 				unsigned char base  = 0;
@@ -177,7 +187,8 @@ bool RunVM()
 
 				if (base == 5) // disp only [ SIB MODE ]
 				{
-					int disp32 = *(MEM + *(MEM + 0x20) + 2);
+					const_off += 4;
+					int disp32 = *(MEM + *(MEM + 0x20) + disp_off);
 					BASEADDR = MEM + disp32;
 					bl += 4;
 				}
@@ -193,7 +204,8 @@ bool RunVM()
 			else if (RM == 6)
 			{
 			//	RMADDR = (unsigned char *) 
-				int disp32 = *(MEM + *(MEM + 0x20) + 2);
+				const_off += 4;
+				int disp32 = *(MEM + *(MEM + 0x20) + disp_off);
 				bl += 4;
 				RMADDR = MEM + disp32;
 			}
@@ -209,16 +221,18 @@ bool RunVM()
 		if (mod == 1)
 		{
 			// indirect + disp 8 
-			char disp8 = *(MEM + *(MEM + 0x20) + 2);
+			const_off++;
+			char disp8 = *(MEM + *(MEM + 0x20) + disp_off); // CAREFULL BECAUSE OF SIB ETC. CONSTANT .ETC
 			bl++;
-			RMADDR = (unsigned char * ) *(RMADDR) + disp8;
+			RMADDR = MEM + *(RMADDR) + disp8;
 		}
 		if (mod == 2)
 		{
 			// indirect + disp 32 
-			int disp32 = *(MEM + *(MEM + 0x20) + 2);
+			int disp32 = *(MEM + *(MEM + 0x20) + disp_off);
 			bl += 4;
-			RMADDR = (unsigned char *) *(RMADDR)+disp32;
+			const_off++;
+			RMADDR = MEM + *(RMADDR) + disp32;
 		}
 		unsigned char * addr1, *addr2;
 		
@@ -244,13 +258,13 @@ bool RunVM()
 			//std::cout << "is imm" << std::endl;
 			if ( (s && d == 0)  || !s) 
 			{
-				char  imm8 = *(MEM + *(MEM + 0x20) + 2);
+				char  imm8 = *(MEM + *(MEM + 0x20) + const_off);
 				immVal = (int)imm8;
 				bl++;
 			}
 			else 
 			{
-				int   imm32 = *(MEM + *(MEM + 0x20) + 2);
+				int   imm32 = *(MEM + *(MEM + 0x20) + const_off);
 				// short imm16 = *(MEM + *(MEM + 0x20) + 2); no 16bit mode
 				immVal = imm32;
 				bl += 4;
@@ -282,6 +296,12 @@ bool RunVM()
 				else
 					*(addr1) = *(addr2);
 			break;
+			case 3: // SUB
+				if (imm)
+					*(addr1) -= immVal;
+				else
+					*(addr1) -= *(addr2);
+			break;
 		}
 		//std::cout << "BOFF : " <<  bl << std::endl;
 		// update EIP
@@ -304,7 +324,6 @@ unsigned char *  GetREGaddr(unsigned char val, bool s, bool b16)
 		else
 			y = 2;
 	}
-	std::cout << "REG at MEM -> " << (int)REGmat[x + y] << std::endl;
 	return MEM + REGmat[x + y];
 
 }
@@ -316,5 +335,11 @@ void PrintReg()
 	std::cout << "EBX : " << (int)*(MEM + 0x04) << std::endl;
 	std::cout << "ECX : " << (int)*(MEM + 0x08) << std::endl;
 	std::cout << "EDX : " << (int)*(MEM + 0x0C) << std::endl;
+
+}
+
+void PrintMem(uint32_t add)
+{
+	std::cout << "[" << add <<"]: " << (int)*(MEM + add) << std::endl;
 
 }
