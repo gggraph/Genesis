@@ -485,28 +485,35 @@ bool RunVM()
 					*addr1 += 1;
 				break;
 			case 13: // DIV
+				caddr2 = (int*)MEM;
 				if (s)
-					*(caddr1) /= *(caddr2);
+					*(caddr2) = ((uint32_t)*(caddr1)) / ((uint32_t)*(caddr2));
 				else
-					*(addr1) /= *(addr2);
+					*(caddr2) = ((uint32_t)*(addr1)) / ((uint32_t)*(addr2));
 				break;
-			case 14: // MUL
+
+			case 14: // MUL ( result store in eax ). mult by operand 1 
+				caddr2 = (int*)MEM;
 				if (s)
-					*(caddr1) = ((uint32_t)*(caddr1)) * ((uint32_t)*(caddr2));
+					*(caddr2) = ((uint32_t)*(caddr1)) * ((uint32_t)*(caddr2));
 				else
-					*(addr1) = ((uint32_t)*(addr1)) * ((uint32_t)*(addr2));
+					*(caddr2) = ((uint32_t)*(addr1)) * ((uint32_t)*(addr2));
 				break;
+
 			case 15: // IDIV
+				caddr2 = (int*)MEM;
 				if (s)
-					*(caddr1) /= *(caddr2);
+					*(caddr2) /= *(caddr2);
 				else
-					*(addr1) /= *(addr2);
+					*(caddr2) /= *(addr1);
 				break;
+
 			case 16: // IMUL
+				caddr2 = (int*)MEM;
 				if (s)
-					*(caddr1) *= *(caddr2);
+					*(caddr2) *= *(caddr1);
 				else
-					*(addr1) *= *(addr2);
+					*(caddr2) *= *(addr1);
 				break;
 
 			case 17: // JMP
