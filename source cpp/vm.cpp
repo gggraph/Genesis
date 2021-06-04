@@ -17,21 +17,20 @@ unsigned char MEM[MEM_SIZE];
 		   0x18           ESI
 		   0x1C           EDI
 		   0x20           EIP
-
 		   0x24           IMR    note : immediate value register to avoid if else condition ... 
 		   0x28           EFLAGS note : unused
 								 note : FPU STACK IS 32bit (and not 80-bit)
 		   0x29           ST0
-		   0x29           ST1
-		   0x29           ST2
-		   0x29           ST3
-		   0x29           ST4
-		   0x29           ST5
-		   0x29           ST6
-		   0x29           ST7
-		   0x29           FFLAGS note : unused
+		   0x2D           ST1
+		   0x31           ST2
+		   0x35           ST3
+		   0x39           ST4
+		   0x3D           ST5
+		   0x41           ST6
+		   0x45           ST7
+		   0x49           FFLAGS note : unused
 
-		   0x29           SC CODE
+		   0x5D           SC CODE
 				   ...
 		   0x?            STACK
 
@@ -70,39 +69,21 @@ const char SIBID []=
 
 const char OPMAP[] =
 {
-
-     0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 
 
-	 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 
-
-	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
-
-	 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 
-
-	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 33, 34, 35, 36, 37, 
-
-	 38, 39, 255,255,255,255,255,255,255,255,255,255,255,255,255,255,
-
-	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 255,255,255,255,255, 
-
-	 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255, 
-
-	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 
-
-	 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 255, 
-
-	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 
-
-	 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 255, 
-
-	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 255,255,255,255,255, 
-
-	 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255, 
-
-	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 255,255,255,255,255, 
-
-	 255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255
-
+0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 
+3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 
+6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 
+9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 12, 12, 11, 11, 12, 
+12, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16, 17, 17, 
+18, 18, 17, 17, 18, 18, 19, 19, 20, 20, 19, 19, 20, 20, 21, 21, 22, 22, 21, 
+21, 22, 22, 23, 23, 24, 24, 23, 23, 24, 24, 25, 25, 26, 26, 25, 25, 26, 26, 
+27, 27, 28, 28, 27, 27, 28, 28, 29, 29, 30, 30, 29, 29, 30, 30, 31, 31, 32, 
+33, 31, 31, 34, 35, 36, 37, 38, 39, 40, 41, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255
 
 };
 
@@ -110,44 +91,85 @@ const char OPMAP[] =
 
 const char OPNUM[] =
 {
-     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 
-	 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 
-	 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 
-	 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 
-	 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 
-	 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-	 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 
-	 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-	 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 
-	 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 
-	 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 
-	 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 
-	 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 
-	 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-	 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 
-	 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0
 
 };
 
+void TestVM() 
+{
+	FILE* f = fopen("C:\\Users\\Gaël\\Pictures\\genesisvm", "rb");
+	
+	if (f == NULL) { return; } // throw error if cannot read
+	fseek(f, 0, SEEK_END);
+	uint32_t lSize = ftell(f);
+	rewind(f);
 
+	unsigned char * fdata = (unsigned char *)malloc(lSize);
+	fread(fdata, 1, lSize, f);
+	InitVM(fdata, lSize);
+	// get number of entries 
+	/*
+	uint32_t entriesnum = BytesToUint(fdata);
+	
+	unsigned char * tdata = (unsigned char *)malloc(lSize - (entriesnum * 4));
+	memcmp(tdata, fdata + (entriesnum * 4) + 4, lSize - ((entriesnum * 4) + 4));
+	InitVM(tdata, lSize - ((entriesnum * 4) + 4));
+	free(tdata);
+	*/
+	free(fdata);
+	RunVM();
+	PrintReg();
+	PrintMem(96);
+	
+}
 
 bool InitVM(unsigned char * cs, uint32_t length)
 {
 	// Init VM with CS Code
-	// EIP (0X21) is initialize at 0x25
-	*(MEM + 0X20) = 0x25;
-	// ESP is initialize at 0x25 + code length
-	UintToBytes(0x25 + length, MEM + 0x10);
+	// EIP (0X2) is initialize at 0x5d
+	UintToBytes(0x5D, MEM + 0x20);
+	// ESP is initialize at MEM + MEM_SIZE
+	UintToBytes(MEM_SIZE - 1, MEM + 0x10);
 	// Copying code seems not working ...
-	memcpy(MEM + 0x25, cs, length);
+	memcpy(MEM + 0x5D, cs, length);
 	return true;
 }
 
 bool RunVM()
 {
+
+	/*
+									ISSUE
+
+			SIB MODE + DSP AS BASE IS NOT WORKING
+		
+	*/
+	int ctrt = 0;
+
 	while (1)
 	{
+		// some rough material
+		unsigned char * t = MEM + 0x20;
+		int * eipaddr = (int*)t;
+		t = MEM + 0x10;
+		int * spaddr = (int*)t;
+
 		uint32_t bl, op_off, mrr_off, sib_off, disp_off, const_off; // [ IMPROVMENT ] SHOULD BE ONLY ONE INC OFFSET USED
 		
 		op_off    = 0; // ++ if prefix
@@ -157,216 +179,438 @@ bool RunVM()
 		const_off = 2; // ++ if prefix, ++ if sib, ++ if disp
 
 
-		bl = 2; // instruction size. add 1 if constant or sib or disp. add 2 if sib+disp
 		// [0] first check prefix offset
 		// [1] Get OPCODE
-		unsigned char  OPCODE = *(MEM + *(MEM + 0x20)); 
-		//std::cout << "OPCODE : " <<(int)OPCODE << std::endl;
-		
-		// HALT TEST
-		if (OPCODE == 0xFF)
-			return true;
-
-		// [0000] should also check if 
-
+		unsigned char  OPCODE = *(MEM + *(eipaddr)); 
+		// default jump if 0.
+		bl = 1;
 
 		//  ________________________________________ DECODING ADDRESSING MODE _____________________________________________
 
 		// [1b] 
 		// depending of opcode jump
 		// [2] GET OPCODE info
-		bool imm     = (IsBitSet(0, OPCODE));
-		bool d       = (IsBitSet(6, OPCODE));
-		bool s       = (IsBitSet(7, OPCODE));
 
+		bool s = false;
+		bool imm = false;
+		bool d = false; // dont needed if one 
 
-		unsigned char MODREGXM = *(MEM + *(MEM + 0x20) + mrr_off );
+		unsigned char * REGADDR, *RMADDR;
+		unsigned char * addr1, *addr2;
+		REGADDR = NULL;
+		RMADDR = NULL;
+		addr1 = NULL;
+		addr2 = NULL;
 
-		unsigned char REG    = 0;
-		unsigned char MOD    = 0;
-		unsigned char RM     = 0;
-		// copying bits
-		SetBit(7, IsBitSet(1, MODREGXM), &MOD);
-		SetBit(6, IsBitSet(0, MODREGXM), &MOD);
-
-		SetBit(7, IsBitSet(4, MODREGXM), &REG);
-		SetBit(6, IsBitSet(3, MODREGXM), &REG);
-		SetBit(5, IsBitSet(2, MODREGXM), &REG);
-
-		SetBit(7, IsBitSet(7, MODREGXM), &RM);
-		SetBit(6, IsBitSet(6, MODREGXM), &RM);
-		SetBit(5, IsBitSet(5, MODREGXM), &RM);
-
-		unsigned char * REGADDR, *  RMADDR;
-		// 16bit mode always false if not 0x66 prefix
-		REGADDR =  GetREGaddr(REG, s, false);  
-		RMADDR  =  GetREGaddr(RM , s, false);
-	
-	    // CHECK SIB MODE OR DISPONLY MOD
-		unsigned char  mod = 0;
-		// copying bits
-		SetBit(7, IsBitSet(1, MODREGXM), (unsigned char *)&mod);
-		SetBit(6, IsBitSet(0, MODREGXM), (unsigned char *)&mod);
-
-		if ( mod == 0 )
+		if (OPNUM[OPCODE] > 0)
 		{
+			 s = (IsBitSet(7, OPCODE));
+			 imm = (IsBitSet(5, OPCODE));
+			 d = (IsBitSet(6, OPCODE)); // dont needed if one 
+
+			bl = 2;
+			unsigned char MODREGXM = *(MEM + *(eipaddr) + mrr_off);
+
+			unsigned char REG = 0;
+			unsigned char MOD = 0;
+			unsigned char RM = 0;
+			// copying bits
+			SetBit(7, IsBitSet(1, MODREGXM), &MOD);
+			SetBit(6, IsBitSet(0, MODREGXM), &MOD);
+
+			SetBit(7, IsBitSet(4, MODREGXM), &REG);
+			SetBit(6, IsBitSet(3, MODREGXM), &REG);
+			SetBit(5, IsBitSet(2, MODREGXM), &REG);
+
+			SetBit(7, IsBitSet(7, MODREGXM), &RM);
+			SetBit(6, IsBitSet(6, MODREGXM), &RM);
+			SetBit(5, IsBitSet(5, MODREGXM), &RM);
+
 			
-			// SIB MODE ( not called CISC for nothing ...) 
-			if (RM == 5) 
+			// 16bit mode always false if not 0x66 prefix
+			REGADDR = GetREGaddr(REG, s, false);
+			RMADDR = GetREGaddr(RM, s, false);
+
+			// CHECK SIB MODE OR DISPONLY MOD
+			unsigned char  mod = 0;
+			// copying bits
+			SetBit(7, IsBitSet(1, MODREGXM), (unsigned char *)&mod);
+			SetBit(6, IsBitSet(0, MODREGXM), (unsigned char *)&mod);
+
+			if (mod == 0)
 			{
-				// update offs
-				disp_off++; 
-				const_off++;
-				bl++;
-				// we update R/M with SIB MODE
-				unsigned char SIB = *(MEM + *(MEM + 0x20) + sib_off);
-				unsigned char scale = 0;
-				unsigned char index = 0; 
-				unsigned char base  = 0;
 
-				SetBit(7, IsBitSet(1, SIB), &scale);
-				SetBit(6, IsBitSet(0, SIB), &scale);
-
-				if (scale == 3)
-					scale = 4;
-				if (scale == 4)
-					scale = 8;
-
-				unsigned char * BASEADDR, *INDEXADDR;
-
-				SetBit(7, IsBitSet(4, SIB), &index);
-				SetBit(6, IsBitSet(3, SIB), &index);
-				SetBit(5, IsBitSet(2, SIB), &index);
-
-				if (index == 5) // illegal...
-					return false;
-
-				
-				INDEXADDR = MEM + SIBID[index];
-
-				SetBit(7, IsBitSet(7, SIB), &base);
-				SetBit(6, IsBitSet(6, SIB), &base);
-				SetBit(5, IsBitSet(5, SIB), &base);
-
-
-				if (base == 5) // disp only [ SIB MODE ]
+				// SIB MODE ( not called CISC for nothing ...) 
+				if (RM == 4)
 				{
+					//std::cout << "detected" << std::endl;
+				
+					// update offs
+					disp_off++;
+					const_off++;
+					bl++;
+					// we update R/M with SIB MODE
+					unsigned char SIB = *(MEM + *(eipaddr) + sib_off);
+					unsigned char scale = 0;
+					unsigned char index = 0;
+					unsigned char base = 0;
+
+					SetBit(7, IsBitSet(1, SIB), &scale);
+					SetBit(6, IsBitSet(0, SIB), &scale);
+
+					switch (scale) {
+						case 0: scale = 1; break;
+						case 1: scale = 2; break;
+						case 2: scale = 4; break;
+						case 3: scale = 8; break;
+					}
+
+					//std::cout << "scale : " << (int)scale << std::endl;
+					unsigned char * BASEADDR, *INDEXADDR;
+
+					SetBit(7, IsBitSet(4, SIB), &index);
+					SetBit(6, IsBitSet(3, SIB), &index);
+					SetBit(5, IsBitSet(2, SIB), &index);
+
+					if (index == 5) // illegal...
+						return false;
+
+
+					INDEXADDR = MEM + SIBID[index];
+					//std::cout << "INDEX : " << (int)SIBID[index] << std::endl;
+
+					SetBit(7, IsBitSet(7, SIB), &base);
+					SetBit(6, IsBitSet(6, SIB), &base);
+					SetBit(5, IsBitSet(5, SIB), &base);
+
+					
+					if (base == 5) // <<<---- THIS IS NOT ALLOWED FOR THE MOMENT..
+					{
+						const_off += 4;
+						int disp32 = BytesToUint(MEM + *(eipaddr) + disp_off);//*(MEM + *(MEM + 0x20) + disp_off);
+						BASEADDR = MEM + disp32;
+						bl += 4;
+					}
+					else
+					{
+						//std::cout << "BASE : " << (int)SIBID[base] << std::endl;
+						BASEADDR = MEM + SIBID[base];
+					}
+
+					RMADDR = (unsigned char *) *(BASEADDR)+(*(INDEXADDR) * scale);
+					RMADDR += (int) MEM;
+
+					//while (true) {}
+				}
+				// 32bit DISP ONLY
+				else if (RM == 5)
+				{
+					//	RMADDR = (unsigned char *) 
 					const_off += 4;
-					int disp32 = *(MEM + *(MEM + 0x20) + disp_off);
-					BASEADDR = MEM + disp32;
+					int disp32 = BytesToUint(MEM + *(eipaddr) + disp_off); //*(MEM + *(MEM + 0x20) + disp_off); 
 					bl += 4;
+					RMADDR = MEM + disp32;
+				}
+				// INDIRECT
+				else
+				{
+					RMADDR = MEM + *(RMADDR); // MEM + LA VALEUR CONTENUE A RM ADDR
+				}
+				// SIB MOD
+
+
+			}
+			if (mod == 1)
+			{
+				//std::cout << "FOUND I DSP 8" << std::endl;
+				// indirect + disp 8 
+				const_off++;
+				char disp8 = *(MEM + *(eipaddr) + disp_off); // CAREFULL BECAUSE OF SIB ETC. CONSTANT .ETC
+				bl++;
+				RMADDR = MEM + *(RMADDR)+disp8;
+			}
+			if (mod == 2)
+			{
+				//std::cout << "FOUND I DSP32" << std::endl;
+				// indirect + disp 32 
+				int disp32 = BytesToUint(MEM + *(eipaddr) + disp_off);// *(MEM + *(MEM + 0x20) + disp_off); // !!------------------------------------
+				bl += 4;
+				const_off++;
+				RMADDR = MEM + *(RMADDR)+disp32;
+			}
+			if (d)
+			{
+				// dest : REG, source : R/M
+				addr1 = REGADDR;
+				addr2 = RMADDR;
+			}
+			else
+			{
+				// dest : R/M, source : REG
+				addr2 = REGADDR;
+				addr1 = RMADDR;
+			}
+		
+			
+			if (imm)
+			{
+				addr1 = RMADDR; // does it needed ???--????
+				//std::cout << "is imm" << std::endl;
+				if ( !s )
+				{
+					char  imm8 = *(MEM + *(eipaddr) + const_off);
+					*(MEM + 0x24) = imm8; 
+					if (OPNUM[OPCODE] == 2)
+						addr1 = MEM + 0x24;
+					else 
+						addr2 = MEM + 0x24;
+					bl++;
 				}
 				else
 				{
-					BASEADDR = MEM + SIBID[index];
+					int   imm32 = BytesToUint(MEM + *(eipaddr) + const_off);//(int)*(MEM + *(MEM + 0x20) + const_off);
+					//std::cout << imm32 << std::endl;
+					// short imm16 = *(MEM + *(MEM + 0x20) + 2); no 16bit mode
+					memcpy(MEM + 0x24, &imm32, 4);
+					if (OPNUM[OPCODE] == 2)
+						addr1 = MEM + 0x24;
+					else
+						addr2 = MEM + 0x24;
+					bl += 4;
 				}
-				
-				RMADDR = (unsigned char * ) *(BASEADDR)+ (*(INDEXADDR) * scale);
 
 			}
-			// 32bit DISP ONLY
-			else if (RM == 6)
-			{
-			//	RMADDR = (unsigned char *) 
-				const_off += 4;
-				int disp32 = *(MEM + *(MEM + 0x20) + disp_off);
-				bl += 4;
-				RMADDR = MEM + disp32;
-			}
-			// INDIRECT
-			else 
-			{
-				RMADDR = MEM + *(RMADDR); // MEM + LA VALEUR CONTENUE A RM ADDR
-			}
-			// SIB MOD
+		}
 
-			
-		}
-		if (mod == 1)
-		{
-			// indirect + disp 8 
-			const_off++;
-			char disp8 = *(MEM + *(MEM + 0x20) + disp_off); // CAREFULL BECAUSE OF SIB ETC. CONSTANT .ETC
-			bl++;
-			RMADDR = MEM + *(RMADDR) + disp8;
-		}
-		if (mod == 2)
-		{
-			// indirect + disp 32 
-			int disp32 = *(MEM + *(MEM + 0x20) + disp_off);
-			bl += 4;
-			const_off++;
-			RMADDR = MEM + *(RMADDR) + disp32;
-		}
-		unsigned char * addr1, *addr2;
+		int * caddr1 = reinterpret_cast<int*>(addr1);
+		int * caddr2 = reinterpret_cast<int*>(addr2);
 		
-
-		if (d) 
-		{
-			// dest : REG, source : R/M
-			addr1 = REGADDR;
-			addr2 = RMADDR ;
-		}
-		else
-		{
-			// dest : R/M, source : REG
-			addr2 = REGADDR;
-			addr1 = RMADDR;
-		}
-
-		// imm mode 
-		int immVal; // usefull if immediate mode
-		if ( imm )
-		{
-			addr1 = RMADDR;
-			//std::cout << "is imm" << std::endl;
-			if ( (s && d == 0)  || !s) 
-			{
-				char  imm8 = *(MEM + *(MEM + 0x20) + const_off);
-				immVal = (int)imm8;
-				bl++;
-			}
-			else 
-			{
-				int   imm32 = *(MEM + *(MEM + 0x20) + const_off);
-				// short imm16 = *(MEM + *(MEM + 0x20) + 2); no 16bit mode
-				immVal = imm32;
-				bl += 4;
-			}
-			
-		}
-
 		//  ___________________________________________ LET S GO _____________________________________________
 
 		// RUN INSTRUCTION ( BY OPCODE MAP (16*16 mat) )( and get INSTRUCTION IDENTIFIER ) 
 		char OPID = OPMAP[OPCODE];
+		//std::cout << "OPCODE NUM " << (int)OPID << std::endl;
+		// Update EIP before jump functions.
+		
+		// when i inc a int pointer it moves by four
+		// eip addr can be use 
+		
+		*(eipaddr) += bl; // it cause issue
 
 		switch (OPID)
 		{
-			case 0: // ADD : OK BUT WIDTH ?
-				if (imm)
-					*(addr1) += immVal;
+			case 0: // ADD 
+				if (s) 
+					*(caddr1) += *(caddr2);
 				else
 					*(addr1) += *(addr2);
 			break; 
-			case 4: // MOV
-				if (imm)
-					*(addr1) = immVal;
+			case 1: // AND 
+				if (s)
+					*(caddr1) &= *(caddr2);
+				else
+					*(addr1) &= *(addr2);
+			break;
+			case 2: // CMP ( it is a substraction and do some stuff ) 
+				// WARNING WE JUST USE 
+				unsigned char nf;
+				int res;
+				if (s)
+					res = (uint32_t)*(caddr2)-(uint32_t)*(caddr1);
+				else
+					res = (uint32_t)*(addr2)-(uint32_t)*(addr1);
+
+				if (res > 0) // SET CF ( resultat negatif )
+				{
+					SetBit(0, true, &nf);
+				}
+				if (res == 0 ) //SET ZF
+				{
+					SetBit(6, true, &nf);
+				}
+				MEM[0x28] = nf;
+			break;
+			case 3: // MOV
+				if (s)
+					*(caddr1) = *(caddr2);
 				else
 					*(addr1) = *(addr2);
 			break;
-			case 10: // SUB
-				if (imm)
-					*(addr1) -= immVal;
+			case 4: // OR
+				if (s)
+					*(caddr1) |= *(caddr2);
+				else
+					*(addr1) |= *(addr2);
+			break;
+			case 5: // ROL
+				//??????????????
+			break;
+			case 6: // ROR
+				//??????????????
+				break;
+			case 7: // SHL
+				if (s)
+					*(caddr1) << *(caddr2);
+				else
+					*(addr1) << *(addr2);
+				break;
+			case 8: // SHR
+				if (s)
+					*(caddr1) >> *(caddr2);
+				else
+					*(addr1) >> *(addr2);
+				break;
+			case 9: // SUB
+				if (s) 
+					*(caddr1) -= *(caddr2);
 				else
 					*(addr1) -= *(addr2);
 			break;
-	
+			case 10: // XOR
+				if (s)
+					*(caddr1) ^= *(caddr2);
+				else
+					*(addr1) ^= *(addr2);
+				break;
+			case 11: // DEC
+				if (s)
+					*caddr1 -= 1; // marche pas car mais le registre en rm 
+				else
+					*addr1 -= 1;
+				break;
+			case 12: // INC
+				if (s)
+					*caddr1 += 1;
+				else
+					*addr1 += 1;
+				break;
+			case 13: // DIV
+				if (s)
+					*(caddr1) /= *(caddr2);
+				else
+					*(addr1) /= *(addr2);
+				break;
+			case 14: // MUL
+				if (s)
+					*(caddr1) = ((uint32_t)*(caddr1)) * ((uint32_t)*(caddr2));
+				else
+					*(addr1) = ((uint32_t)*(addr1)) * ((uint32_t)*(addr2));
+				break;
+			case 15: // IDIV
+				if (s)
+					*(caddr1) /= *(caddr2);
+				else
+					*(addr1) /= *(addr2);
+				break;
+			case 16: // IMUL
+				if (s)
+					*(caddr1) *= *(caddr2);
+				else
+					*(addr1) *= *(addr2);
+				break;
+
+			case 17: // JMP
+				UintToBytes(*(caddr1), MEM + 0x20);
+				break;
+			case 18: // NEG
+				if (s)
+					*(caddr1) *= -1;
+				else
+					*(addr1) *= -1;
+				break;
+			case 19: // NOT
+				if (s)
+					*(caddr1) ^= -1;
+				else
+					*(addr1) ^= -1;
+				break;
+				//---------- CONDITIONNAL JUMP-----------
+			case 20: // JE
+				if (IsBitSet(6, MEM[0x28])) 
+					UintToBytes(*(caddr1), MEM + 0x20);
+				break;
+			case 21: // JA SEEMS INVERT
+				if (!IsBitSet(0, MEM[0x28]) && !IsBitSet(6, MEM[0x28]))
+					UintToBytes(*(caddr1), MEM + 0x20);
+				break;
+			case 22: // JAE
+				if (!IsBitSet(0, MEM[0x28]) )
+					UintToBytes(*(caddr1), MEM + 0x20);
+				break;
+			case 23: // JB
+				if (IsBitSet(0, MEM[0x28]) && !IsBitSet(6, MEM[0x28]))
+					UintToBytes(*(caddr1), MEM + 0x20);
+				break;
+			case 24: // JBE
+				if (IsBitSet(0, MEM[0x28]))
+					UintToBytes(*(caddr1), MEM + 0x20);
+				break;
+				// same as last four but signed. NOT IMPLEMENTED.
+			case 25: break;
+			case 26: break;
+			case 27: break;
+			case 28: break;
+
+			case 29:  // POP 
+				if (s) 
+				{
+
+					*(caddr1) = *((int*)MEM + *(MEM + 0x10));
+					*spaddr +=4; 
+				}
+				else 
+				{
+					*(addr1) = *((char*)MEM + *(MEM + 0x10));
+					*spaddr++;
+				}
+				break; 
+
+			case 30:  // PUSH
+
+				//*((int*)MEM + *(MEM + 0x10)) <- la valeur contenu a sp
+				if (s)
+				{
+					*spaddr-=4;
+					*((int*)MEM + *(MEM + 0x10)) = *(caddr1);
+				}
+				else
+				{
+					*spaddr--;
+					*((char*)MEM + *(MEM + 0x10)) = *(addr1);
+				}
+				break;
+			case 31:  // CALL  ( push eip, jmp operand ) 
+				*spaddr -= 4; 
+				*( (int*)MEM + *(MEM + 0x10)) = *(eipaddr);
+				UintToBytes(*(caddr1), MEM + 0x20); 
+
+				break;
+
+			case 32:  // RET  ( pop eip )
+
+				*eipaddr = *((int*)MEM + *(MEM + 0x10));
+				*spaddr += 4;
+				break;
+			case 33: // JECXZ 
+				if (BytesToUint(MEM + 0x08) == 0) 
+				{
+					UintToBytes(*(caddr1), MEM + 0x20);
+				}
+				break; 
+			case 34: // POPA 
+				break;
+
+			case 35: // PUSHA 
+				break;
+
+			case 36: // HLT
+				return true;
+			// specific method : 
+				//----- undone 
 		}
-		//std::cout << "BOFF : " <<  bl << std::endl;
-		// update EIP
-		*(MEM + 0x20) += bl;
+		ctrt++;
 		
+			
 	}
 	return true;
 }
@@ -384,7 +628,7 @@ unsigned char *  GetREGaddr(unsigned char val, bool s, bool b16)
 		else
 			y = 2;
 	}
-	std::cout << "REG at MEM -> " << (int)REGmat[x + y] << std::endl;
+	//std::cout << "REG at MEM -> " << (int)REGmat[x + y] << std::endl;
 	return MEM + REGmat[x + y];
 
 }
@@ -392,15 +636,20 @@ unsigned char *  GetREGaddr(unsigned char val, bool s, bool b16)
 void PrintReg()
 {
 
-	std::cout << "EAX : " << (int)*(MEM + 0x00) << std::endl;
-	std::cout << "EBX : " << (int)*(MEM + 0x04) << std::endl;
-	std::cout << "ECX : " << (int)*(MEM + 0x08) << std::endl;
-	std::cout << "EDX : " << (int)*(MEM + 0x0C) << std::endl;
+	std::cout << "EAX : " << BytesToUint(MEM) << std::endl;
+	std::cout << "EBX : " << BytesToUint(MEM + 0x04) << std::endl;
+	std::cout << "ECX : " << BytesToUint(MEM + 0x08) << std::endl;
+	std::cout << "EDX : " << BytesToUint(MEM + 0x0C) << std::endl;
 
 }
 
+void PrintTopStack() 
+{
+	//*( (int*)MEM + *(MEM + 0x10))
+	std::cout << "[STACK]: " << *((int*)MEM + *(MEM + 0x10)) << std::endl;
+}
 void PrintMem(uint32_t add)
 {
-	std::cout << "[" << add <<"]: " << (int)*(MEM + add) << std::endl;
+	std::cout << "[" << add <<"]: " << BytesToUint(MEM + add) << std::endl;
 
 }
