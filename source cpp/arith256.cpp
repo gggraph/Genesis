@@ -36,12 +36,14 @@ unsigned int bits_256(unsigned char * A)
 }
 void div_256(unsigned char * A, uint32_t B)
 { 
+	if (!B) // illegal
+		return;
 
-	// if b 0 return
 	unsigned char dividend[32];
 	memcpy(dividend, A, 32);
 	unsigned char divisor[32];
-	divisor[31] = 2;
+	memset(divisor, 0, 32);
+	memcpy(divisor, &B, 4);
 	memset(A, 0, 32); 
 
 	// this is used for fast perf
