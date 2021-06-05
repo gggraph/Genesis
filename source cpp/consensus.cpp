@@ -1,5 +1,6 @@
 #include "consensus.h"
 #include "sha256.h"
+#include "arith256.h"
 
 void ProccessBlocksFile(const char * filePath)
 {
@@ -151,7 +152,8 @@ bool VerifyBlocksFile(const char * filePath, uint32_t lastOfficialindex, uint32_
 
 		// get hash target requirement
 		unsigned char reqtarget[32];
-		GetRequiredTarget(reqtarget, firstfblockindex, filePath);
+		memset(reqtarget, 0, 32);
+		GetRequiredTarget(reqtarget, firstfblockindex, cBlock,lBlock, filePath);
 		
 		// get b size [ shitty but workin ? ]
 
@@ -199,9 +201,32 @@ bool VerifyBlocksFile(const char * filePath, uint32_t lastOfficialindex, uint32_
 	return true;
 	
 }
-void GetRequiredTarget(unsigned char * buff, uint32_t firstbfIndex, const char * filePath)
+void GetRequiredTarget(unsigned char * buff, uint32_t firstbfIndex, unsigned char * cBlock, unsigned char * pBlock, const char * filePath)
 {
-	memset(buff, 0, 32);
+	uint32_t bindex = GetBlockIndex(cBlock);
+
+	if(bindex % TARGET_CLOCK && bindex >= TARGET_CLOCK)
+	{
+		uint32_t lindex = bindex - TARGET_CLOCK;
+		unsigned char * lblock = NULL;
+		if ( lindex >= firstbfIndex )
+		{
+			lblock = GetUnofficialBlock(filePath, lindex);
+		}
+		else
+		{
+			lblock = GetOfficialBlock(lindex);
+		}
+		if (lblock == NULL)
+			return;
+
+		ComputeHashTargetB(GetBlockTimeStamp(cBlock), lblock, buff);
+		free(lblock);
+	}
+	else
+	{
+		memcpy(buff, GetBlockHashTarget(pBlock), 32);
+	}
 }
 
 uint32_t GetRequiredTimeStamp(int index , uint32_t firstbfIndex, unsigned char * lBlock, unsigned char * cBlock, const char * filePath )
@@ -350,14 +375,36 @@ uint32_t GetMiningReward(uint32_t index )
 	return Reward;
 }
 
-void ComputeHashTarget(uint32_t index, unsigned char * buff) // need a buffer[32]
+
+void ComputeHashTargetB(uint32_t TimeStampB, unsigned char * prevbloc, unsigned char * buff)
 {
-	//get block at index-TARGETCLOCK and do the common things with 256b number 
+	uint32_t TimeStampA = GetBlockTimeStamp(prevbloc);
+	uint32_t TimeSpent = TimeStampB - TimeStampA;
+
+	uint32_t QPLUS  = TARGET_TIME * TARGET_FACTOR;
+	uint32_t QMINUS = TARGET_TIME / TARGET_FACTOR;
+
+	if (TimeSpent > QPLUS)
+		TimeSpent = QPLUS; 
+
+	if (TimeSpent < QMINUS)
+		TimeSpent = QMINUS;
+
+	memcpy( buff, GetBlockHashTarget(prevbloc), 32);
+	mul_256(buff, TimeSpent);
+	div_256(buff, TARGET_TIME);
+
+	// then adjust if sup than max target. 
+}
+void ComputeHashTarget(uint32_t index, unsigned char * buff) // this one is not used.
+{
+	// IT IS NOT USED.
 	memset(buff, 0, 32);
 }
 
-void GetRelativeHashTarget(uint32_t index, unsigned char * buff) // needed when 
+void GetRelativeHashTarget(uint32_t index, unsigned char * buff) //needed if new block struct system.
 {
+	// IT IS NOT USED.
 	uint32_t ni = nearestmultiple(index, TARGET_CLOCK, true);
 	unsigned char * b = GetOfficialBlock(ni);
 	memcpy(buff, GetBlockHashTarget(b), 32);

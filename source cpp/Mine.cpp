@@ -1,4 +1,5 @@
 #include "Mine.h"
+#include "arith256.h"
 
 void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * fpathbuffer) // return the name of the mined block path
 {
@@ -66,12 +67,13 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 
 	if (nIndex % TARGET_CLOCK && nIndex >= TARGET_CLOCK)
 	{
-		ComputeHashTarget(nIndex, buff);
+
+		ComputeHashTargetB(BytesToUint(buff), GetOfficialBlock(nIndex - TARGET_CLOCK), buff);
 		memcpy(ublock + 40, buff, 32);
 	}
 	else
 	{
-		memcpy(ublock+40, GetBlockHashTarget(lastblock), 32); // should use getrelative if block nformat
+		memcpy(ublock+40, GetBlockHashTarget(lastblock), 32); 
 	}
 
 	int boff;
@@ -101,19 +103,26 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	Sha256.write((char *)ublock, datasize - 36);
 	memcpy(buff, Sha256.result(), 32);
 
+	
 
-	// MINE
-	uint32_t golden_nonce = 0;
-	/*
+	// _________________ MINING _________________
+
+	uint32_t golden_nonce;
+	memcpy(nblock + 4, buff, 32); // copy head
 	while (1)
 	{
-		
+		golden_nonce = rand() % UINT_MAX;
+		UintToBytes(golden_nonce, nblock);
+		Sha256.init();
+		Sha256.write((char *)nblock, 36);
+		// for double hash func,  we can add here : Sha256.init(); Sha256.write(Sha256.result(), 32);
+		if ( cmp_256(Sha256.result(), ublock + 40 ) <= 0 ) 
+			break;
 	}
-	*/
-	// END
-	
+
+	// _________________ PROCCESS FILE _________________
 	memcpy(nblock, ublock, 4);
-	memcpy(nblock+4, buff, 32);
+	memcpy(nblock + 4, buff, 32);
 	memcpy(nblock + 36, ublock + 4, 68);
 	memcpy(nblock + 104, &golden_nonce, 4);
 	memcpy(nblock + 108, ublock + 72, datasize - 108); 
