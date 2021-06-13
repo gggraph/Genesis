@@ -3,7 +3,9 @@
 
 #define MEM_SIZE 32000 
 
+
 unsigned char MEM[MEM_SIZE];
+char  storagefPath [250];
 /*
 		
 		   REGS IN THE MEM STRUCTURE :
@@ -111,6 +113,30 @@ const char OPNUM[] =
 
 };
 
+const char GASMAP []
+{
+
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 0, 0, 10, 10, 
+0, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+
+
+};
+
 void TestVM() 
 {
 	FILE* f = fopen("C:\\Users\\Gaël\\Pictures\\genesisvm", "rb");
@@ -122,21 +148,64 @@ void TestVM()
 
 	unsigned char * fdata = (unsigned char *)malloc(lSize);
 	fread(fdata, 1, lSize, f);
-	InitVM(fdata, lSize);
+	
 	// get number of entries 
-	/*
-	uint32_t entriesnum = BytesToUint(fdata);
+	/**/
+	uint32_t entriesnum = BytesToUint(fdata); 
+	if (entriesnum == 0)
+		return; //NO ENTRY IS NOT ALLOWED
 	
-	unsigned char * tdata = (unsigned char *)malloc(lSize - (entriesnum * 4));
-	memcmp(tdata, fdata + (entriesnum * 4) + 4, lSize - ((entriesnum * 4) + 4));
-	InitVM(tdata, lSize - ((entriesnum * 4) + 4));
-	free(tdata);
-	*/
-	free(fdata);
-	RunVM();
+	unsigned char * tdata = (unsigned char *)malloc(lSize - (entriesnum * 4) - 4);
+	memcpy(tdata, fdata + (entriesnum * 4) + 4, lSize - (entriesnum * 4) - 4);
+	InitVM(tdata, lSize - (entriesnum * 4) - 4);
+	
+	RunVM(0, MAX_GAS_SIZE);
+	
 	PrintReg();
-	PrintMem(96);
-	
+	free(tdata);
+	free(fdata);
+}
+
+bool LoadContract( uint32_t bIndex, uint32_t TxIndex ) 
+{
+	// craft & verify storage path 
+	unsigned char buffer[8];
+	memcpy(buffer, &bIndex, 4); 
+	memcpy(buffer+4, &TxIndex, 4);
+	Sha256.init();
+	Sha256.write((char*)buffer, 8);
+	GetHashString(Sha256.result(), storagefPath);
+	std::ostringstream s;
+	s << "sc\\" << storagefPath;
+	std::string ss = s.str();
+	strcpy(storagefPath, ss.c_str());
+	FILE* f = fopen(storagefPath, "rb");
+	if (f == NULL) { return false; } // contract storage not existing 
+
+	// INIT  VM
+	fseek(f, 0, SEEK_END);
+	uint32_t lSize = ftell(f);
+	rewind(f);
+
+	unsigned char * fdata = (unsigned char *)malloc(lSize);
+	fread(fdata, 1, lSize, f);
+
+	// get number of entries 
+	/**/
+	uint32_t entriesnum = BytesToUint(fdata);
+	if (entriesnum == 0)
+		return false; //NO ENTRY IS NOT ALLOWED
+
+	unsigned char * tdata = (unsigned char *)malloc(lSize - (entriesnum * 4) - 4);
+	memcpy(tdata, fdata + (entriesnum * 4) + 4, lSize - (entriesnum * 4) - 4);
+	InitVM(tdata, lSize - (entriesnum * 4) - 4);
+	free(tdata);
+	free(fdata);
+
+	fclose(f);
+
+
+	return true;
 }
 
 bool InitVM(unsigned char * cs, uint32_t length)
@@ -151,16 +220,29 @@ bool InitVM(unsigned char * cs, uint32_t length)
 	return true;
 }
 
-bool RunVM()
+
+bool RunVMAtPtr(uint32_t memaddr, int gas, int _guserlimit)
+{
+	UintToBytes(memaddr, MEM + 0x20);
+	return RunVM(gas, _guserlimit);
+}
+
+
+int RunVM(int gas, int _guserlimit) // return gas used.
 {
 
 	/*
 									ISSUE
 
-			SIB MODE + DSP AS BASE IS NOT WORKING
+			*SIB MODE + DSP AS BASE IS NOT WORKING
+			*IMMEDIATE IS ALWAYS 32BIT WE DONT USE D-BIT FOR ASSIGN CONSTANT DEPTH. 
+			WE COULD USE FIRST REG BIT TO IMPLEMENT IT ( CAUSE WE DONT NEED OPCODE EXTENSION)
+			*MOST OF STUFF DONT IMPLEMENT S-BIT ...
 		
 	*/
+	int i_gas = gas;
 	int ctrt = 0;
+	FILE* f; 
 
 	while (1)
 	{
@@ -181,7 +263,7 @@ bool RunVM()
 
 		// [0] first check prefix offset
 		// [1] Get OPCODE
-		unsigned char  OPCODE = *(MEM + *(eipaddr)); 
+		unsigned char  OPCODE = *(MEM + *eipaddr); 
 		// default jump if 0.
 		bl = 1;
 
@@ -209,7 +291,7 @@ bool RunVM()
 			 d = (IsBitSet(6, OPCODE)); // dont needed if one 
 
 			bl = 2;
-			unsigned char MODREGXM = *(MEM + *(eipaddr) + mrr_off);
+			unsigned char MODREGXM = *(MEM + *eipaddr + mrr_off);
 
 			unsigned char REG = 0;
 			unsigned char MOD = 0;
@@ -239,7 +321,7 @@ bool RunVM()
 
 			if (mod == 0)
 			{
-
+				
 				// SIB MODE ( not called CISC for nothing ...) 
 				if (RM == 4)
 				{
@@ -250,7 +332,7 @@ bool RunVM()
 					const_off++;
 					bl++;
 					// we update R/M with SIB MODE
-					unsigned char SIB = *(MEM + *(eipaddr) + sib_off);
+					unsigned char SIB = *(MEM + *eipaddr + sib_off);
 					unsigned char scale = 0;
 					unsigned char index = 0;
 					unsigned char base = 0;
@@ -266,41 +348,37 @@ bool RunVM()
 					}
 
 					//std::cout << "scale : " << (int)scale << std::endl;
-					unsigned char * BASEADDR, *INDEXADDR;
+					unsigned char * BASEADDR, * INDEXADDR;
 
 					SetBit(7, IsBitSet(4, SIB), &index);
 					SetBit(6, IsBitSet(3, SIB), &index);
 					SetBit(5, IsBitSet(2, SIB), &index);
 
 					if (index == 5) // illegal...
-						return false;
+						return 0;
 
 
-					INDEXADDR = MEM + SIBID[index];
-					//std::cout << "INDEX : " << (int)SIBID[index] << std::endl;
+					INDEXADDR = MEM + SIBID[index]; // does this scale to intptr ? +4 * sibid?
 
 					SetBit(7, IsBitSet(7, SIB), &base);
 					SetBit(6, IsBitSet(6, SIB), &base);
 					SetBit(5, IsBitSet(5, SIB), &base);
 
 					
-					if (base == 5) // <<<---- THIS IS NOT ALLOWED FOR THE MOMENT..
+					if (base == 5) // disp as base not working 
 					{
 						const_off += 4;
-						int disp32 = BytesToUint(MEM + *(eipaddr) + disp_off);//*(MEM + *(MEM + 0x20) + disp_off);
+						int disp32 = BytesToUint(MEM + *eipaddr + disp_off); 
 						BASEADDR = MEM + disp32;
 						bl += 4;
 					}
 					else
 					{
-						//std::cout << "BASE : " << (int)SIBID[base] << std::endl;
 						BASEADDR = MEM + SIBID[base];
 					}
 
-					RMADDR = (unsigned char *) *(BASEADDR)+(*(INDEXADDR) * scale);
-					RMADDR += (int) MEM;
+					RMADDR = MEM + BytesToUint(BASEADDR) + (BytesToUint(INDEXADDR)*scale);
 
-					//while (true) {}
 				}
 				// 32bit DISP ONLY
 				else if (RM == 5)
@@ -314,29 +392,29 @@ bool RunVM()
 				// INDIRECT
 				else
 				{
-					RMADDR = MEM + *(RMADDR); // MEM + LA VALEUR CONTENUE A RM ADDR
+					// can be either 32b or 8 bit. be carefull of this 
+					RMADDR = MEM + BytesToUint(RMADDR); 
 				}
 				// SIB MOD
 
 
 			}
-			if (mod == 1)
+			if (mod == 1) // probleme is here . RMADDR CAN BE 32bit... 
 			{
-				//std::cout << "FOUND I DSP 8" << std::endl;
 				// indirect + disp 8 
+				// CARE FULL MEM IS32 BIT ... 
 				const_off++;
 				char disp8 = *(MEM + *(eipaddr) + disp_off); // CAREFULL BECAUSE OF SIB ETC. CONSTANT .ETC
-				bl++;
-				RMADDR = MEM + *(RMADDR)+disp8;
+				bl++; 
+				RMADDR = MEM + BytesToUint(RMADDR) + disp8;
 			}
 			if (mod == 2)
 			{
-				//std::cout << "FOUND I DSP32" << std::endl;
 				// indirect + disp 32 
 				int disp32 = BytesToUint(MEM + *(eipaddr) + disp_off);// *(MEM + *(MEM + 0x20) + disp_off); // !!------------------------------------
 				bl += 4;
 				const_off++;
-				RMADDR = MEM + *(RMADDR)+disp32;
+				RMADDR = MEM + BytesToUint(RMADDR) + disp32;
 			}
 			if (d)
 			{
@@ -352,9 +430,24 @@ bool RunVM()
 			}
 		
 			
-			if (imm)
+			if (imm) // imm is always 32bit ....
 			{
+				// [the first reg bit should tell if const is one byte or 4 bytes ] 
+
 				addr1 = RMADDR; // does it needed ???--????
+				int   imm32 = BytesToUint(MEM + *(eipaddr)+const_off);//(int)*(MEM + *(MEM + 0x20) + const_off);
+					//std::cout << imm32 << std::endl;
+					// short imm16 = *(MEM + *(MEM + 0x20) + 2); no 16bit mode
+				memcpy(MEM + 0x24, &imm32, 4);
+				// 2 means one operand. 3 means 2 operands. 
+				if (OPNUM[OPCODE] == 2)
+					addr1 = MEM + 0x24;
+				else
+					addr2 = MEM + 0x24; 
+				
+				bl += 4;
+
+				/*
 				//std::cout << "is imm" << std::endl;
 				if ( !s )
 				{
@@ -378,25 +471,30 @@ bool RunVM()
 						addr2 = MEM + 0x24;
 					bl += 4;
 				}
+				*/
 
 			}
 		}
-
+		
 		int * caddr1 = reinterpret_cast<int*>(addr1);
 		int * caddr2 = reinterpret_cast<int*>(addr2);
 		
-		//  ___________________________________________ LET S GO _____________________________________________
+		//  ___________________________________________ (-_-) _____________________________________________
 
 		// RUN INSTRUCTION ( BY OPCODE MAP (16*16 mat) )( and get INSTRUCTION IDENTIFIER ) 
 		char OPID = OPMAP[OPCODE];
-		//std::cout << "OPCODE NUM " << (int)OPID << std::endl;
 		// Update EIP before jump functions.
 		
 		// when i inc a int pointer it moves by four
 		// eip addr can be use 
 		
-		*(eipaddr) += bl; // it cause issue
+		*(eipaddr) += bl;
+		gas += GASMAP[OPCODE];
 
+		if (gas >= MAX_GAS_SIZE || gas-i_gas >= _guserlimit) {
+			return 0;
+		}
+		// break if gas is above max
 		switch (OPID)
 		{
 			case 0: // ADD 
@@ -420,7 +518,7 @@ bool RunVM()
 				else
 					res = (uint32_t)*(addr2)-(uint32_t)*(addr1);
 
-				if (res > 0) // SET CF ( resultat negatif )
+				if (res > 0) // SET CF
 				{
 					SetBit(0, true, &nf);
 				}
@@ -431,6 +529,7 @@ bool RunVM()
 				MEM[0x28] = nf;
 			break;
 			case 3: // MOV
+				//std::cout << "moving to " << (addr1 - MEM) << "from " << (addr2 - MEM)<<  std::endl;
 				if (s)
 					*(caddr1) = *(caddr2);
 				else
@@ -517,7 +616,7 @@ bool RunVM()
 				break;
 
 			case 17: // JMP
-				UintToBytes(*(caddr1), MEM + 0x20);
+				UintToBytes(*caddr1, MEM + 0x20);
 				break;
 			case 18: // NEG
 				if (s)
@@ -561,8 +660,7 @@ bool RunVM()
 			case 29:  // POP 
 				if (s) 
 				{
-
-					*(caddr1) = *((int*)MEM + *(MEM + 0x10));
+					memcpy(caddr1, MEM + BytesToUint(MEM + 0x10), 4);
 					*spaddr +=4; 
 				}
 				else 
@@ -574,11 +672,10 @@ bool RunVM()
 
 			case 30:  // PUSH
 
-				//*((int*)MEM + *(MEM + 0x10)) <- la valeur contenu a sp
 				if (s)
 				{
 					*spaddr-=4;
-					*((int*)MEM + *(MEM + 0x10)) = *(caddr1);
+					 memcpy(MEM + BytesToUint(MEM + 0x10), caddr1, 4);
 				}
 				else
 				{
@@ -604,22 +701,88 @@ bool RunVM()
 					UintToBytes(*(caddr1), MEM + 0x20);
 				}
 				break; 
-			case 34: // POPA 
+			case 34: // POPA  ( pop tout les registres generaux dans cet ordre )  
+				     // EDI, ESI, EBP, ESP, EBP, EBX, EDX, ECX, EAX
+
+				memcpy(MEM + 0x1C, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4;
+				memcpy(MEM + 0x18, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4;
+				memcpy(MEM + 0x14, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4;
+				memcpy(MEM + 0x10, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4;
+				memcpy(MEM + 0x14, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4;
+				memcpy(MEM + 0x04, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4;
+				memcpy(MEM + 0x0C, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4;
+				memcpy(MEM + 0x08, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4;
+				memcpy(MEM, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4;
+
 				break;
 
-			case 35: // PUSHA 
+			case 35: // PUSHA ( pousse tout les registres generaux dans cet ordre )  
+				    // EAX, ECX, EDX, EBX, EBP, ESP (original value), EBP, ESI, and EDI
+
+				*spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), MEM , 4);
+				*spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), MEM + 0x08, 4);
+				*spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), MEM + 0x0C, 4);
+				*spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), MEM + 0x04, 4);
+				*spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), MEM + 0x14, 4);
+				*spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), MEM + 0x10, 4);
+				*spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), MEM + 0x14, 4);
+				*spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), MEM + 0x18, 4);
+				*spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), MEM + 0x1C, 4);
 				break;
 
 			case 36: // HLT
-				return true;
-			// specific method : 
-				//----- undone 
+				return gas;
+			//	-_-_-_-_-_-_-_-_-_-_-_-_-_ CUSTOM METHOD -_-_-_-_-_-_-_-_-_-_-_-_-_	\\
+
+			case 37: // VFS -> Verify Signature. Not implemented 
+				break;
+			case 38: // SHA -> Compute SHA256. EAX: RAM PTR | ECX: Number Of Bytes | EDX: RAM PTR (hash)
+				Sha256.init();
+				Sha256.write((char*)MEM + BytesToUint(MEM), BytesToUint(MEM+0x08));
+				memcpy(MEM + BytesToUint(MEM + 0x0C), Sha256.result(), 32);
+				break;
+
+			case 39: // RSA?
+				break;
+			case 40: // LDF -> Load  Contract storage. EAX: FILE PTR | ECX: Number Of Bytes | EDX: RAM PTR
+				f = fopen(storagefPath, "rb");
+				if (f == NULL) { return 0; } 
+				fseek(f, BytesToUint(MEM), SEEK_SET);
+				fread(MEM + BytesToUint(MEM + 0x0C), 1, BytesToUint(MEM + 0x08), f);
+				fclose(f);
+				break;
+			case 41: // STF -> Store Contract storage. EAX: FILE PTR | ECX: Number Of Bytes | EDX: RAM PTR
+				f = fopen(storagefPath, "r+b");
+				if (f == NULL) return 0;
+				fseek(f, BytesToUint(MEM), SEEK_SET);
+				fwrite(MEM + BytesToUint(MEM + 0x0C), 1, BytesToUint(MEM + 0x08), f);
+				fclose(f);
+				break;
 		}
+
 		ctrt++;
 		
 			
 	}
-	return true;
+	return 0;
 }
 
 unsigned char *  GetREGaddr(unsigned char val, bool s, bool b16) 
@@ -643,11 +806,23 @@ unsigned char *  GetREGaddr(unsigned char val, bool s, bool b16)
 void PrintReg()
 {
 
-	std::cout << "EAX : " << BytesToUint(MEM) << std::endl;
-	std::cout << "EBX : " << BytesToUint(MEM + 0x04) << std::endl;
-	std::cout << "ECX : " << BytesToUint(MEM + 0x08) << std::endl;
-	std::cout << "EDX : " << BytesToUint(MEM + 0x0C) << std::endl;
+	std::cout << "EAX : " <<(int)BytesToUint(MEM) << std::endl;
+	std::cout << "EBX : " << (int)BytesToUint(MEM + 0x04) << std::endl;
+	std::cout << "ECX : " << (int)BytesToUint(MEM + 0x08) << std::endl;
+	std::cout << "EDX : " << (int)BytesToUint(MEM + 0x0C) << std::endl;
 
+	std::cout << "EBP : " << (int)BytesToUint(MEM + 0x14) << std::endl;
+	std::cout << "ESP : " << (int)BytesToUint(MEM + 0x10) << std::endl;
+
+}
+
+void PrintStackRange(int r) 
+{
+
+	int div = r / 2;
+	int * spaddr =(int *)( MEM + 10 );
+	for (int i = -r; i < r; i++ )
+		std::cout << "["<< (int*)( *(MEM + 0x10) + i) <<"]: " << *((int*)MEM + *(MEM + 0x10) + i) << std::endl;
 }
 
 void PrintTopStack() 
@@ -657,6 +832,6 @@ void PrintTopStack()
 }
 void PrintMem(uint32_t add)
 {
-	std::cout << "[" << add <<"]: " << BytesToUint(MEM + add) << std::endl;
+	std::cout << "[" << add <<"]: " << (int)BytesToUint(MEM + add) << std::endl;
 
 }
