@@ -3,22 +3,15 @@
 // -_-_-_-_-_-_-_-_-_-_-_-_-_-_- CONSENSUS PARAMETERS -_-_-_-_-_-_-_-_-_-_-_-_- \\
 
 #define RUN_DISTANCE			6
-#define TARGET_CLOCK			2106
+#define TARGET_CLOCK			42 //2106
 #define TIMESTAMP_TARGET		11
-#define TARGET_TIME				2520
+#define TARGET_TIME				1260//2520
 #define TARGET_FACTOR			4
 #define FIRST_UNIX_TIMESTAMP    1598981949
 #define NATIVE_REWARD		    50
 #define HALVING_CLOCK		    210000
 #define MAX_TIME_UP		        7200
 
-
-extern unsigned char GENESIS_TARGET       []
-{
-	0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
-	0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
-	0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
-	0xAC,0x75,0x65,0xBD,0x93,0x5,0x0,0x0,
-
-};
+#define MAX_GAS_SIZE            12500000
+#define MAX_CONTRACT_SIZE       16000
 

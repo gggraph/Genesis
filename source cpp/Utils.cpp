@@ -23,8 +23,8 @@ uint32_t nearestmultiple(uint32_t numToRound, uint32_t multiple, bool flr)
 		return numToRound - remainder;
 }
 
-
-void SetBit(int p, bool b, unsigned char * byte)
+// we should not invert 
+void SetBit(int p, bool b, unsigned char * byte)// not working here cause only for int 
 {
 	if (b)
 		*byte |= 1UL << (7 - p); 
@@ -34,7 +34,7 @@ void SetBit(int p, bool b, unsigned char * byte)
 }
 bool IsBitSet(int p, unsigned char byte) 
 {
-	return (byte >> (7 - p)) & 1U;
+	return (byte >> (7 - p)) & 1U;// not working here 
 }
 
 

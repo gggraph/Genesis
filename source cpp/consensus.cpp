@@ -1,6 +1,7 @@
 #include "consensus.h"
 #include "sha256.h"
 #include "arith256.h"
+#include <chrono>
 
 void ProccessBlocksFile(const char * filePath)
 {
@@ -272,6 +273,7 @@ uint32_t GetRequiredTimeStamp(int index , uint32_t firstbfIndex, unsigned char *
 //IsBlockValid(Block b, Block prevb, uint MIN_TIME_STAMP, byte[] HASHTARGET, byte[] reqtarget, List<UTXO> vUTXO)
 bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblockindex, uint32_t MIN_TIME_STAMP, uint32_t bsize, unsigned char * reqtarget)
 {
+	uint32_t bindex = GetBlockIndex(b);
 	// [0] verify hash root 
 	unsigned char * ublock = (unsigned char *)malloc(bsize - 36);
 	unsigned char buff[32];
@@ -321,15 +323,23 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 	//.... (not verified 4 da moment )
 	// [4] verify every tx 
 	uint32_t mReward = GetMiningReward(GetBlockIndex(b));
+	int gas = 0;
 	for (int i = 0 ; i < GetTransactionNumber(b); i++ )
 	{
 		unsigned char * txp = GetBlockTransaction(b, i); // don't need to free it. it's in b mem.
-		if ( !IsTransactionValid(txp, firstblockindex - 1) )
+		if ( !IsTransactionValid(txp, firstblockindex - 1, &gas, bindex, i)  )
 		{
 			std::cout << "[Block Refused] Transaction not valid." << std::endl; 
 			return false;
 		
 		}
+		if (gas > MAX_GAS_SIZE)
+		{
+			std::cout << "[Block Refused] Transaction not valid. Gas Out." << std::endl;
+			return false;
+		}
+			
+
 		mReward += GetTXFee(txp);
 	}
 	// [5] Update miner virtual utxo with reward + mining reward (if no dust )
@@ -394,12 +404,100 @@ void ComputeHashTargetB(uint32_t TimeStampB, unsigned char * prevbloc, unsigned 
 	mul_256(buff, TimeSpent);
 	div_256(buff, TARGET_TIME);
 
-	// then adjust if sup than max target. 
+	// then adjust if sup than max target.  
+	unsigned char ge_tar[] =
+	{
+		0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
+		0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
+		0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
+		0xAC,0x75,0x65,0xBD,0x93,0x5,0x0,0x0
+
+	};
+
+	if (cmp_256(buff, ge_tar) > -1)
+		memcpy(buff, ge_tar, 32);
 }
 void ComputeHashTarget(uint32_t index, unsigned char * buff) // this one is not used.
 {
 	// IT IS NOT USED.
 	memset(buff, 0, 32);
+}
+
+void TestProofOfWork()
+{
+	unsigned char buff[36];
+	uint32_t nonce = 0;
+	uint32_t index = 0;
+	unsigned char ge_tar[] =
+	{
+		0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
+		0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
+		0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
+		0xAC,0x75,0x65,0xBD,0x93,0x5,0x0,0x0
+
+	};
+	 char str[64];
+	auto start = std::chrono::high_resolution_clock::now();
+	int ctr_t = 0;
+	unsigned char faki[32];
+	while ( true )
+	{
+	
+		while (true)
+		{
+
+			nonce = rand() % UINT_MAX;
+			UintToBytes(nonce, buff);
+			Sha256.init();
+			Sha256.write((char *)buff, 36);
+			// for double hash func,  we can add here : Sha256.init(); Sha256.write(Sha256.result(), 32);
+			if (cmp_256(Sha256.result(), ge_tar) <= 0) { // seems not good
+				break;
+			}
+		}
+		index++;
+
+		
+		if( index == TARGET_CLOCK)  
+		{
+			ctr_t++;
+			
+			auto end = std::chrono::high_resolution_clock::now();
+			uint32_t TimeSpent = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+			uint32_t QPLUS = TARGET_TIME * TARGET_FACTOR;
+			uint32_t QMINUS = TARGET_TIME / TARGET_FACTOR;
+
+			if (TimeSpent > QPLUS)
+				TimeSpent = QPLUS;
+
+			if (TimeSpent < QMINUS)
+				TimeSpent = QMINUS;
+
+			mul_256(ge_tar, TimeSpent);
+			div_256(ge_tar, TARGET_TIME);
+
+			// then adjust if sup than max target.  
+			unsigned char max_tar[] =
+			{
+				0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
+				0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
+				0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
+				0xAC,0x75,0x65,0xBD,0x93,0x5,0x0,0x0
+
+			};
+
+			if (cmp_256(ge_tar, max_tar) > 0)
+				memcpy(ge_tar, max_tar, 32);
+
+
+			start = std::chrono::high_resolution_clock::now();
+			index = 0;
+			std::cout << ctr_t << std::endl;
+		}
+	
+	}
+	
+
 }
 
 void GetRelativeHashTarget(uint32_t index, unsigned char * buff) //needed if new block struct system.

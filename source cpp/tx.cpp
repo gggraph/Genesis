@@ -1,5 +1,6 @@
 #include "tx.h"
-
+#include "params.h"
+#include "vm.h"
 
 /*
 [TX header]
@@ -7,37 +8,51 @@ PuKey Pointer   (4 bytes)
 PrKey Signature (512 bytes)
 TOU             (4 bytes)
 Purishment   	(4 byte )
-Fee             (4 byte ) (corresponding to all cost + additional reward for miner)
+Fee             (4 byte ) (reward for miner)
 Byte ID         (1 byte )
 [TX data]
 Data Size       (4 bytes)
 Data            (Data Size)
 */
 
-bool IsTransactionValid(unsigned char * TX, uint32_t blockindextime)
+bool IsTransactionValid(unsigned char * TX, uint32_t blockindextime, int * gas, uint32_t blocindex, uint32_t txindex)
 {
-	if ( !VerifyHeaderTransaction )
+	
+	if ( !VerifyHeaderTransaction(TX, blockindextime) )
 		return false;
 
 	switch (GetTXByteID(TX))
 	{
-		case 0: return VerifyDFT(TX, blockindextime);
-		case 1: return VerifyCST(TX, blockindextime);
-		case 2: return VerifyCRT(TX, blockindextime);
+		case 0:  return VerifyDFT(TX, blockindextime, gas);
+		case 1:  return VerifyCST(TX, blockindextime, gas, blocindex, txindex);
+		case 2:  return VerifyCRT(TX, blockindextime, gas);
 	}
 
 	return false; 
 }
 
-bool VerifyHeaderTransaction(unsigned char * TX)
+bool VerifyHeaderTransaction(unsigned char * TX, uint32_t blockindextime)
 {
 	//[0] Verify RSA Signature ( type of sign should depend on byteflag )
+	//....
 	//[1] Verify Token Of Uniqueness
+	unsigned char  sutxo[544];
+	GetVirtualUtxo(BytesToUint(TX), blockindextime, sutxo);
+	if (GetTXTokenOfUniqueness(TX) != GetUtxoTOU(sutxo) + 1) 
+	{
+		std::cout << "Wrong TOU" << std::endl;
+		return false;
+	}
 	//[2] Verify Purishment Time
+	if ( GetTXPurishmentDate(TX) < GetTimeStamp())
+	{
+		std::cout << "TX has purished" << std::endl;
+		return false;
+	}
 	return true;
 }
 
-bool VerifyDFT(unsigned char * TX, uint32_t blockindextime)
+bool VerifyDFT(unsigned char * TX, uint32_t blockindextime, int * gas)
 {
 	/*
 		DFT Structure : 
@@ -51,7 +66,7 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime)
 	unsigned char  rutxo[544];
 	GetVirtualUtxo(BytesToUint(TX), blockindextime, sutxo);
 
-	uint32_t MIN_FEE = 0; // native fee for proccess DFT
+	uint32_t MIN_FEE = 0; // native fee for proccess DFT. 
 	unsigned char * TXDATA = GetTXData(TX); // just a ptr
 	if (*TXDATA == 0)
 	{
@@ -72,7 +87,7 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime)
 	if (txfee < MIN_FEE)
 		std::cout << "[BLOCK REFUSED] Insuffisant fee in a transaction";  return false;
 
-	if ( totCost  < GetUtxoSold(sutxo))
+	if ( totCost > GetUtxoSold(sutxo))
 		std::cout << "[BLOCK REFUSED] Insuffisant sold in a transaction";  return false;
 
 	// update sender sold and tou. update receiver sold.  
@@ -86,13 +101,106 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime)
 
 }
 
-bool VerifyCST(unsigned char * TX, uint32_t blockindextime)
-{
+bool VerifyCST(unsigned char * TX, uint32_t blockindextime, int * gas, uint32_t blocindex, uint32_t txindex)
+{	
+	// [0] Verify Sender has suffisant sold to pay the fee
+	unsigned char  sutxo[544];
+	GetVirtualUtxo(BytesToUint(TX), blockindextime, sutxo);
+	uint32_t txfee = GetTXFee(TX);
+	if (GetUtxoSold(sutxo) < txfee) 
+	{
+		std::cout << "[BLOCK REFUSED] Insuffisant sold in a transaction";  
+		return false;
+	}
+	// [1] Verify CST contract size is not exceeding gas limit ( we write 1 gas per byte write ) we can adjust this later
+	uint32_t dtsize = GetTXDataSize(TX);
+	if (*gas + dtsize * 1 > MAX_GAS_SIZE)
+		return false;
+
+	// [2] Verify CST contract is not over 16ko. 
+	if ( dtsize > MAX_CONTRACT_SIZE)
+		return false;
+
+	// [3] Create Contract Storage ( i need block index and tx index ) 
+	char str[255];
+	unsigned char buffer[8];
+	memcpy(buffer, &blocindex, 4); // bloc index is offset 0 
+	memcpy(buffer + 4, &txindex, 4);
+	Sha256.init();
+	Sha256.write((char*)buffer, 8);
+	GetHashString(Sha256.result(), str);
+	std::ostringstream s;
+	s << "sc\\tmp\\" << str; // it is temporary so i need to put it in the sc\tmp folder 
+	std::string ss = s.str();
+	FILE* f = fopen(ss.c_str(), "wb");
+	if (f == NULL) return false; // contract was not created.
+	fclose(f);
+
+	// [4] Update gas
+	*gas += dtsize * 1;
+
+	// [3b] Run Contract ?
+	
 	return true;
 }
 
-bool VerifyCRT(unsigned char * TX, uint32_t blockindextime)
+bool VerifyCRT(unsigned char * TX, uint32_t blockindextime, int * gas)
 {
+	/*
+	Smart Contract pointer    (8 bytes)
+		[*] Push  Operations  (4 bytes) -> repeated a specific amount of time determined by validator with data size
+	Smart Contract Entry Jump (4 bytes)
+	User Gas Limit            (4 bytes)
+	*/
+	// [0] Verify contract exist
+
+	unsigned char * txdata = GetTXData(TX);
+	uint32_t cbi = BytesToUint(txdata);
+	uint32_t cti = BytesToUint(txdata + 4);
+	// first check if we can get this block.
+	unsigned char * contractbloc = NULL;
+	if (cbi > blockindextime)
+		contractbloc = GetUnofficialBlock("", cbi); // aie i need a file path ;'(
+	else
+		contractbloc = GetOfficialBlock(cbi);
+	if (contractbloc == NULL)
+		return false;
+	if (GetTransactionNumber(contractbloc) + 1 < cti) // i dont know if i need the +1 :: i should verify 
+		return false;
+	
+	unsigned char * contractTransaction = GetBlockTransaction(contractbloc,cti);
+	if (contractTransaction == NULL)
+		return false;
+
+	// [1] Verify entry exist
+	uint32_t argnum = (GetTXDataSize(TX) - 12) / 4; // every push are 32bit value. thats all .
+	uint32_t entrynum = BytesToUint(txdata + (argnum * 4) + 8); // get the entry in the smartcontract data in the bloc
+	int _guserlimit = BytesToUint(txdata + (argnum * 4) + 12); 
+	unsigned char * contractdata = GetTXData(contractTransaction);
+	if (BytesToUint(contractdata) < entrynum) // bad entry
+		return false;
+	uint32_t entrymem = BytesToUint(contractdata + 4 + (entrynum * 4)); // entry mem is update for 0x5d in assembler i guess
+
+	// [2] Init Virtual Machine ('-')
+
+	InitVM(contractdata + 4 + (BytesToUint(contractdata)*4), 
+		GetTXDataSize(contractdata)  - (4 + (BytesToUint(contractdata) * 4)), 
+		entrymem);
+
+	// [3] Push arguments to VM Stack
+	for (int i = 0; i < argnum; i++) 
+		PushArgument(BytesToUint(txdata + (i * 4) + 8));
+
+	// [4] Run
+
+	int rs = RunVM(*gas, _guserlimit);
+	if (!rs)
+		return false;
+
+	// [5] Update Gas
+	*gas += rs;
+
+	free(contractbloc);
 	return true;
 }
 

@@ -3,11 +3,33 @@
 #include "sha256.h"
 #include "Mine.h"
 #include <windows.h>
+#include "vm.h"
+#include "arith256.h"
 
 
 int main(int argv, char** args)
 {
+	TestVM();
+	while ( 1){}
+	/*
+	TestVM();
+	
+	unsigned char A256[32];
+	unsigned char B256[32];
+	memset(A256,0, 255); memset(B256, 0, 31);
+	A256[31] = 1;
+	B256[31] = 2;
+	int cr = cmp_256(A256, B256);
+	mul_256(A256, 200); // it works.
+	div_256(A256, 2); // will test. should result 3. 
+	char hex[64];
+	hx_256(A256, hex);
+	std::cout << hex << std::endl;
 
+	while ( true ){}
+	*/
+
+	while ( 1){}
 	InitChain();
 	VerifyFiles();
 	LoadBlockPointers();
@@ -92,12 +114,7 @@ int main(int argv, char** args)
 		ProccessBlocksFile(wblockpath);
 		i++;
 	}
-	memset(utxobuff, 0, 540);
-	GetUtxo(utxop, utxobuff);
-	std::cout << " sold : " << GetUtxoSold(utxobuff) << std::endl;
-	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
-	while ( 1 ){}
-	
+	while ( true ){}
 
 }
 
@@ -117,6 +134,8 @@ bool VerifyFiles()
 	}
 	if (!FileExists("sc"))
 	{
+		_wmkdir(L"sc");
+		_wmkdir(L"sc\\tmp");
 		// rebuild SC From Blockchain
 	}
 	if (!FileExists("tmp"))
@@ -157,6 +176,7 @@ void CreateGenesisBlock()
 	memset(genese, 0, 115);
 	uint32_t ts = (uint32_t)FIRST_UNIX_TIMESTAMP;
 	memcpy(genese + 68, &ts, 4);
+	memcpy(genese + 72, GENESIS_TARGET, 32);
 
 	// create the first blockchain file
 	AppendFile("blockchain\\0", genese, 115);
@@ -178,6 +198,7 @@ void CreateGenesisBlock()
 	DeleteDirectory("sc");
 	DeleteDirectory("tmp");
 	_wmkdir(L"sc");
+	_wmkdir(L"sc\\tmp");
 	_wmkdir(L"tmp");
 	std::cout << "genesis created.";
 

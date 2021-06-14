@@ -143,7 +143,6 @@ void GetVirtualUtxoInTempFile(unsigned char * buff, uint32_t index, unsigned cha
 	}
 	fclose(f);
 	std::cout << "RETURNING NULLIFY POINTER";
-	//*buff = 0; // setting it to null 
 	return;
 }
 

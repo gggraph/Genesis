@@ -109,6 +109,7 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 
 	uint32_t golden_nonce;
 	memcpy(nblock + 4, buff, 32); // copy head
+	std::cout << "start mining" << std::endl;
 	while (1)
 	{
 		golden_nonce = rand() % UINT_MAX;
@@ -116,10 +117,10 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 		Sha256.init();
 		Sha256.write((char *)nblock, 36);
 		// for double hash func,  we can add here : Sha256.init(); Sha256.write(Sha256.result(), 32);
-		if ( cmp_256(Sha256.result(), ublock + 40 ) <= 0 ) 
+		if (cmp_256(Sha256.result(), ublock + 40) <= 0) { // seems not good
 			break;
+		}
 	}
-
 	// _________________ PROCCESS FILE _________________
 	memcpy(nblock, ublock, 4);
 	memcpy(nblock + 4, buff, 32);

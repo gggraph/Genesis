@@ -16,3 +16,4 @@ uint32_t GetRequiredTimeStamp(int index,uint32_t firstbfIndex, unsigned char * l
 void GetRequiredTarget(unsigned char * buff, uint32_t firstbfIndex, unsigned char * cBlock, unsigned char * lBlock, const char * filePath);
 
 uint32_t GetMiningReward(uint32_t index);
+void TestProofOfWork();

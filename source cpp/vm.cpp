@@ -1,8 +1,13 @@
+/*
+INSTRUCTIONS A IMPLEMANTER: 
+LIRE LE STORAGE D'AUTRES SMARTCONTRACT.
+LIRE DES BLOCS. ( TXS, ETC. ) LIRE DES UTXOS (ETC.) 
+
+*/
 
 #include "vm.h"
 
 #define MEM_SIZE 32000 
-
 
 unsigned char MEM[MEM_SIZE];
 char  storagefPath [250];
@@ -139,7 +144,7 @@ const char GASMAP []
 
 void TestVM() 
 {
-	FILE* f = fopen("C:\\Users\\GaÃ«l\\Pictures\\genesisvm", "rb");
+	FILE* f = fopen("C:\\Users\\Gaël\\Pictures\\genesisvm", "rb");
 	
 	if (f == NULL) { return; } // throw error if cannot read
 	fseek(f, 0, SEEK_END);
@@ -166,7 +171,7 @@ void TestVM()
 	free(fdata);
 }
 
-bool LoadContract( uint32_t bIndex, uint32_t TxIndex ) 
+bool LoadContract( uint32_t bIndex, uint32_t TxIndex, bool _newcontract) 
 {
 	// craft & verify storage path 
 	unsigned char buffer[8];
@@ -176,9 +181,15 @@ bool LoadContract( uint32_t bIndex, uint32_t TxIndex )
 	Sha256.write((char*)buffer, 8);
 	GetHashString(Sha256.result(), storagefPath);
 	std::ostringstream s;
-	s << "sc\\" << storagefPath;
+
+	if (_newcontract) // destination is different when loading from new contract
+		s << "sc\\tmp\\" << storagefPath;
+	else
+		s << "sc\\" << storagefPath;
+
 	std::string ss = s.str();
 	strcpy(storagefPath, ss.c_str());
+
 	FILE* f = fopen(storagefPath, "rb");
 	if (f == NULL) { return false; } // contract storage not existing 
 
@@ -208,11 +219,11 @@ bool LoadContract( uint32_t bIndex, uint32_t TxIndex )
 	return true;
 }
 
-bool InitVM(unsigned char * cs, uint32_t length)
+bool InitVM(unsigned char * cs, uint32_t length, uint32_t startaddress)
 {
 	// Init VM with CS Code
 	// EIP (0X2) is initialize at 0x5d
-	UintToBytes(0x5D, MEM + 0x20);
+	UintToBytes(startaddress, MEM + 0x20);
 	// ESP is initialize at MEM + MEM_SIZE
 	UintToBytes(MEM_SIZE - 1, MEM + 0x10);
 	// Copying code seems not working ...
@@ -227,6 +238,15 @@ bool RunVMAtPtr(uint32_t memaddr, int gas, int _guserlimit)
 	return RunVM(gas, _guserlimit);
 }
 
+
+bool PushArgument(uint32_t arg)
+{
+	unsigned char * t = MEM + 0x10;
+	int * spaddr = (int*)t;
+	*spaddr -= 4;
+	memcpy(MEM + BytesToUint(MEM + 0x10), &arg, 4);
+	return true;
+}
 
 int RunVM(int gas, int _guserlimit) // return gas used.
 {
