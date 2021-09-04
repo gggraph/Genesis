@@ -4,9 +4,7 @@
 void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * fpathbuffer) // return the name of the mined block path
 {
 
-	// normally is GetPTXforNewBlock()
-	// il arrive a miner mais pas le 3eme . ( cause une erreur ) . ca veut dire qu'il arrive a miner le 2 e en prenant le 1er . 
-	// mais pas le 3e 
+
 	char bfpath[255];
 	GetLatestBlockFilePath(bfpath);
 	std::cout << " file path : " << bfpath << std::endl;
@@ -42,9 +40,9 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 		txsize = datasize;
 	}
 	if (!utxop)
-		datasize += 643;
+		datasize += 175; // i dk really where is those 2 bytes flying 
 	else
-		datasize += 115;
+		datasize += 115;  
 
 	// start creating the block header 
 	unsigned char * nblock = (unsigned char *)malloc(datasize);
@@ -52,7 +50,7 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	unsigned char buff[32];
 
 	/*
-	Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 532+1 o] .
+	Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 64+1 o] .
 	. txn ( 2o ) . txs (variable)
 	*/
 
@@ -68,12 +66,15 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	if (nIndex % TARGET_CLOCK && nIndex >= TARGET_CLOCK)
 	{
 
-		ComputeHashTargetB(BytesToUint(buff), GetOfficialBlock(nIndex - TARGET_CLOCK), buff);
+		ComputeHashTarget(BytesToUint(buff), GetOfficialBlock(nIndex - TARGET_CLOCK), buff);
 		memcpy(ublock + 40, buff, 32);
 	}
 	else
 	{
+		
+
 		memcpy(ublock+40, GetBlockHashTarget(lastblock), 32); 
+	
 	}
 
 	int boff;
@@ -86,8 +87,8 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	else
 	{
 		memset(ublock + 72, 1, 1);
-		memcpy(ublock + 73, puKey, 532);
-		boff = 605;
+		memcpy(ublock + 73, puKey, 64); // puKey is 64b
+		boff = 137;
 	}
 
 	memcpy(ublock + boff, &txn, 2); // txn
@@ -106,26 +107,34 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	
 
 	// _________________ MINING _________________
-
-	uint32_t golden_nonce;
+	
+	uint32_t golden_nonce = 0;
 	memcpy(nblock + 4, buff, 32); // copy head
 	std::cout << "start mining" << std::endl;
+	std::cout << "target required : " << std::endl;
+	for (int i = 0; i < 32; i++) {
+		std::cout << (int)*(ublock + 40 + i) << "-";
+	}
+	std::cout << std::endl;
+	srand(time(NULL));
 	while (1)
 	{
-		golden_nonce = rand() % UINT_MAX;
-		UintToBytes(golden_nonce, nblock);
+		// we can define here a strategy. increment nonce is ok right now .... but we can use random bytes also ...
+		golden_nonce++;//golden_nonce = rand() % UINT_MAX;
+		UintToBytes(golden_nonce, nblock); // copy nonce to nblock 
 		Sha256.init();
-		Sha256.write((char *)nblock, 36);
+		Sha256.write((char *)nblock, 36); // hash first 36 bytes ( nonce + header ) 
 		// for double hash func,  we can add here : Sha256.init(); Sha256.write(Sha256.result(), 32);
-		if (cmp_256(Sha256.result(), ublock + 40) <= 0) { // seems not good
+		if (cmp_256(Sha256.result(), ublock + 40) <= 0) {
 			break;
 		}
 	}
+	
 	// _________________ PROCCESS FILE _________________
 	memcpy(nblock, ublock, 4);
 	memcpy(nblock + 4, buff, 32);
 	memcpy(nblock + 36, ublock + 4, 68);
-	memcpy(nblock + 104, &golden_nonce, 4);
+	memcpy(nblock + 104, &golden_nonce, 4); // put nonce at 104 ptr
 	memcpy(nblock + 108, ublock + 72, datasize - 108); 
 
 
@@ -139,7 +148,7 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	// Append Header data for unofficial blocks file
 	
 
-	if ( _continuefork ) // UN OCTET DECALE PAR MOMENT. BOFF doit etre augmenté de  1 .... SOMETIMES NO.
+	if ( _continuefork ) 
 	{
 		// [0] Get old file size and copy memory
 		FILE* f = fopen(bfpath, "rb");

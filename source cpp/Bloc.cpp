@@ -19,7 +19,8 @@ void PrintBlockInfo(unsigned char * b )
 	val = GetBlockTimeStamp(b);
 	std::cout << "ts :" << val << std::endl;
 	std::cout << "ht :";
-	printHash(GetBlockHashTarget(b));
+	for (int i = 0; i < 32; i++) { std::cout << (int)*(b + 72 + i) << "-"; }
+	std::cout << std::endl;
 	val = GetBlockNonce(b);
 	std::cout << "nonce :" << val << std::endl;
 	val = GetTransactionNumber(b);
@@ -195,7 +196,7 @@ unsigned char * GetBlock(const char *filePath, uint32_t bOff)
 {
 	std::cout << "start reading at " << bOff << " in " << filePath << std::endl;
 	/*
-	Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 532+1 o] .
+	Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 64+1 o] .
 	. txn ( 2o ) . txs (variable)
 
 	*/
@@ -210,7 +211,7 @@ unsigned char * GetBlock(const char *filePath, uint32_t bOff)
 	if (uintbuff[0] == 1)
 	{
 		std::cout << "Dust needed" << std::endl;
-		eOff += 533;
+		eOff += 65;
 	}
 	else
 	{
@@ -225,16 +226,16 @@ unsigned char * GetBlock(const char *filePath, uint32_t bOff)
 	eOff += 2; // ??
 	while (txn > 0)
 	{
-		eOff += 529; // jump to datasize
+		eOff += 81; // jump to datasize 
 		ReadFile(filePath, eOff, 4, uintbuff); // cause error
 		eOff += BytesToUint(uintbuff);
 		txn--;
 	}
 	// so now i know exactly the number of bytes 
 	/*
-	[TX header]
+	[TX header] (81 bytes )
 	PuKey Pointer   (4 bytes)
-	PrKey Signature (512 bytes)
+	PrKey Signature (64 bytes)
 	TOU             (4 bytes)
 	Purishment   	(4 byte )
 	Fee             (4 byte ) (corresponding to all cost + additional reward for miner 
@@ -255,9 +256,9 @@ unsigned char * GetBlock(const char *filePath, uint32_t bOff)
 /*		
 		NEW BLOCK STRUCTURE :   -----> (can save 32o per block ... )  needed ???
 		index (4o) . hash (32o) . phash (32o) . timestamp (4o) . nonce (4 o). txn. (2o) . flag (1o) 
-		miner token (either 4 or 532 ) . txs ( variable ) 
+		miner token (either 5 or 65 ) . txs ( variable ) 
 
-		Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . nonce (4 o). hashtarget (32o) .   .  miner token [can be either 4+1 o or 532+1 o] .
+		Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .nonce (4 o).    .  miner token [can be either 4+1 o or 532+1 o] .
 		. txn ( 2o ) . txs (variable)
 	*/
 
@@ -298,7 +299,7 @@ uint32_t GetTransactionNumber(unsigned char * block)
 	if (GetMinerTokenFlag(block) == 0)
 		off = 113;
 	else
-		off = 641;
+		off = 173;
 
 	std::cout << "txn read at " << off << std::endl;
 	return BytesToShort(block + off);
@@ -313,12 +314,12 @@ unsigned char * GetBlockTransaction(unsigned char * block, uint32_t index) // re
 	if (GetMinerTokenFlag(block) == 0)
 		off = 113;
 	else
-		off = 641;
+		off = 173; // the starting offset if pub key is delivered in minertoken 
 
 	while ( index > 0 )
 	{
-		off += 129;
-		off += BytesToUint(block+ off) + 4; 
+		off += 81; // jump through tx data size 
+		off += BytesToUint(block+ off) + 4;  // jump tx data size + [4 ( the data of datasize information )]
 		index--;
 	}
 	return block + off;
@@ -327,7 +328,7 @@ unsigned char * GetBlockTransaction(unsigned char * block, uint32_t index) // re
 /*
 [TX header]
 PuKey Pointer   (4 bytes)
-PrKey Signature (512 bytes)
+PrKey Signature (64 bytes)
 TOU             (4 bytes)
 Purishment   	(4 byte )
 Fee             (4 byte ) (corresponding to all cost + additional reward for miner
@@ -335,21 +336,23 @@ Byte ID         (1 byte )
 [TX data]
 Data Size       (4 bytes)
 Data            (Data Size)
+
+Signature is the whole data except signature : PUKEYPTR TOOU PURSIGHMENT FEE BYTE ID DATASIZE DATA ETC
 */
-void GetTXsPuKey(unsigned char * buffer, unsigned char * TX) // need a buffer[32]
+void GetTXsPuKey(unsigned char * buffer, unsigned char * TX) // need a buffer[64]
 {
 	uint32_t utxop = BytesToUint(TX);
-	unsigned char utxo[540];
-	memset(utxo, 0, 540);
+	unsigned char utxo[72];
+	memset(utxo, 0, 72);
 	GetUtxo(utxop, utxo);
+	
 	if (isUtxoNull(utxo)) {
 		buffer == NULL;
 		free(utxo);
 		return;
 	}
-	memcpy(buffer, GetUtxoPuKey(utxo), 32);
-	free(utxo);
-	// go find it in UTXO SET
+	memcpy(buffer, GetUtxoPuKey(utxo), 64); // i dont remember if i  use hash of pukey to do the signature ?
+
 }
 
 unsigned char * GetTXSignature(unsigned char * TX) // return ptr
@@ -358,27 +361,27 @@ unsigned char * GetTXSignature(unsigned char * TX) // return ptr
 }
 uint32_t GetTXTokenOfUniqueness(unsigned char * TX)
 {
-	return BytesToUint(TX + 516);
+	return BytesToUint(TX + 68);
 }
 uint32_t GetTXPurishmentDate(unsigned char * TX)
 {
-	return BytesToUint(TX + 520);
+	return BytesToUint(TX + 72);
 }
 uint32_t GetTXFee(unsigned char * TX)
 {
-	return BytesToUint(TX + 524);
+	return BytesToUint(TX + 76);
 }
 unsigned char GetTXByteID(unsigned char * TX)
 {
-	return TX[528];
+	return TX[80];
 }
 uint32_t GetTXDataSize(unsigned char * TX)
 {
-	return BytesToUint(TX + 529);
+	return BytesToUint(TX + 81);
 }
 unsigned char * GetTXData(unsigned char * TX) // return ptr
 {
-	return TX + 533;
+	return TX + 85;
 }
 
 

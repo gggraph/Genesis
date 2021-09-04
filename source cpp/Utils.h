@@ -1,8 +1,9 @@
 #pragma once
-
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 #include <chrono>
 #include <io.h>
 #include <filesystem>
+#include <experimental/filesystem>
 #include <iostream>
 
 typedef unsigned char byte;

@@ -1,21 +1,28 @@
 #include "utxo.h"
 
+/*
+UTXO STRUCT  :  (72) or (76 virtual) / before it was 540 or 544
+PUKEY      64 B
+TOU        4  B
+SOLD       4  B
+VPTR       4  B ( only on virtual UTXO ) 
+*/
 
-unsigned char * GetUtxoPuKey(unsigned char * utxo) // return ptr (0) not used ?
+unsigned char * GetUtxoPuKey(unsigned char * utxo) // return ptr (0) not used ? 64 bytes
 {
 	return utxo;
 }
 uint32_t GetUtxoTOU(unsigned char * utxo)
 {
-	return BytesToUint(utxo + 532);
+	return BytesToUint(utxo + 64);
 }
 uint32_t GetUtxoSold(unsigned char * utxo)
 {
-	return BytesToUint(utxo + 536);
+	return BytesToUint(utxo + 68);
 }
 uint32_t  GetVirtualUtxoOffset(unsigned char * utxo) // virtual set ptr 4 fast overwriting
 {
-	return BytesToUint(utxo + 540);
+	return BytesToUint(utxo + 72);
 }
 
 
@@ -37,18 +44,18 @@ uint32_t GetUtxoPointer(unsigned char * puKey) // really slow . only work with u
 	rewind(f);
 	// secure 
 	uint32_t utxop = 0;
-	unsigned char fdata[532];
+	unsigned char fdata[64];
 	while ( boff < lSize)
 	{
 		fseek(f, boff, SEEK_SET);
-		fread(fdata, 1, 532, f);
-		if (memcmp(puKey, fdata, 532) == 0)
+		fread(fdata, 1, 64, f);
+		if (memcmp(puKey, fdata, 64) == 0)
 		{
 			std::cout << "UTXO FOUND" << std::endl;
 			return utxop;
 		}
 		utxop++;
-		boff += 540;
+		boff += 72;
 	}
 	fclose(f);
 	std::cout << "NOT FOUND" << std::endl;
@@ -58,7 +65,7 @@ uint32_t GetUtxoPointer(unsigned char * puKey) // really slow . only work with u
 bool isUtxoNull(unsigned char * utxo)
 {
 	// yes if pukey is full of 0 
-	for (int i = 0; i < 540 ; i++ )
+	for (int i = 0; i < 72 ; i++ )
 	{
 		if (utxo[i] != 0) {
 			return false;
@@ -72,9 +79,9 @@ void GetUtxo(uint32_t index, unsigned char * buff) // have to arg a buff pointer
 	// WARNING IT NOT NULLIFY
 	// [0] getting utxo set file
 	uint32_t mfs = MAX_FILE_SIZE;
-	uint32_t filenum = (540 * index) / mfs;
-	uint32_t utxonumperfile = mfs / 540; // it is equal to 1 
-	uint32_t bOff = (540 * index) - (filenum*utxonumperfile);
+	uint32_t filenum = (72 * index) / mfs;
+	uint32_t utxonumperfile = mfs / 72; // it is equal to 1 
+	uint32_t bOff = (72 * index) - (filenum*utxonumperfile);
 	std::ostringstream s;
 	s << "utxos\\" << filenum;
 	std::string ss = s.str();
@@ -87,14 +94,14 @@ void GetUtxo(uint32_t index, unsigned char * buff) // have to arg a buff pointer
 	uint32_t lSize = ftell(f);
 	rewind(f);
 	// secure 
-	if (lSize < bOff + 540)
+	if (lSize < bOff + 72)
 	{
 		fclose(f);
 		return;
 	}
 	// [2] load 
 	fseek(f, bOff, SEEK_SET);
-	fread(buff, 1, 540, f);
+	fread(buff, 1, 72, f);
 	fclose(f);
 }
 
@@ -111,15 +118,15 @@ void GetVirtualUtxoInTempFile(unsigned char * buff, uint32_t index, unsigned cha
 	uint32_t vIndex = 0;
 	while (boff < lSize) 
 	{
-		unsigned char fdata[540]; 
+		unsigned char fdata[72]; 
 		if ( index == 0 )
 		{
 			fseek(f, boff+4, SEEK_SET);
-			fread(fdata, 1, 540, f);
-			if (memcmp(puKey, fdata, 532) == 0)
+			fread(fdata, 1, 72, f);
+			if (memcmp(puKey, fdata, 64) == 0)
 			{
-				memcpy(buff, fdata, 540);
-				UintToBytes(vIndex, buff + 540); // add virtual set index
+				memcpy(buff, fdata, 72);
+				UintToBytes(vIndex, buff + 72); // add virtual set index
 				fclose(f);
 				return;
 			}
@@ -131,14 +138,14 @@ void GetVirtualUtxoInTempFile(unsigned char * buff, uint32_t index, unsigned cha
 			if ( BytesToUint(fdata) == index )
 			{
 				fseek(f, boff+4, SEEK_SET);
-				fread(buff, 1, 540, f);
-				UintToBytes(vIndex, buff + 540); // add virtual set index
+				fread(buff, 1, 72, f);
+				UintToBytes(vIndex, buff + 72); // add virtual set index
 				fclose(f);
 				return;
 			}
 		}
 
-		boff += 544;
+		boff += 76;
 	 	vIndex++;
 	}
 	fclose(f);
@@ -148,10 +155,10 @@ void GetVirtualUtxoInTempFile(unsigned char * buff, uint32_t index, unsigned cha
 
 void GetVirtualUtxo(uint32_t utxop, uint32_t blockindextime, unsigned char * rvUtxo, unsigned char * nUtxo)
 // Everything start here : 
-// add official utxo to virtual set if not already existing (at from specific index time ) and return a virtual utxo [544 bytes]
+// add official utxo to virtual set if not already existing (at from specific index time ) and return a virtual utxo [76 bytes]
 {
-	unsigned char utxo[544]; // NOT WORKIN
-	memset(utxo, 0, 540); // always zeroing utxo
+	unsigned char utxo[76]; // NOT WORKIN
+	memset(utxo, 0, 72); // always zeroing utxo
 
 	if (utxop != 0)
 	{
@@ -161,7 +168,7 @@ void GetVirtualUtxo(uint32_t utxop, uint32_t blockindextime, unsigned char * rvU
 		if (!isUtxoNull(utxo)) // means if utxo[0]
 		{
 			// return utxo found in vutxos
-			memcpy(rvUtxo, utxo, 544);
+			memcpy(rvUtxo, utxo, 76);
 			return;
 		}
 		else
@@ -181,16 +188,15 @@ void GetVirtualUtxo(uint32_t utxop, uint32_t blockindextime, unsigned char * rvU
 			}
 			// downgrade if needed
 			DowngradeUtxoAtSpecificBlockTime(utxo, blockindextime);
-			// append 540 bytes ( utxo ) 
-			fwrite(utxo, 1, 540, f);
+			// append 72 bytes ( utxo ) 
+			fwrite(utxo, 1, 72, f);
 			// copy to return utxo
-			memcpy(rvUtxo, utxo, 540);
+			memcpy(rvUtxo, utxo, 72);
 			uint32_t lSize = ftell(f);
 			// add utxo count ... seems ok 
-			UintToBytes((lSize / 544)-1, rvUtxo + 540); // add extra info bytes (544)
+			UintToBytes((lSize / 76)-1, rvUtxo + 72); // add extra info bytes (76)
 			fclose(f);
 			
-		
 			return;
 		}
 	}
@@ -209,11 +215,11 @@ void GetVirtualUtxo(uint32_t utxop, uint32_t blockindextime, unsigned char * rvU
 		memset(utxo, 0, 4); // zeroing index 
 		fseek(f, 0, SEEK_END);
 		fwrite(utxo, 1, 4, f); // write index 0 
-		fwrite(nUtxo, 1, 540, f);
-		memcpy(rvUtxo, nUtxo, 540); // ok
+		fwrite(nUtxo, 1, 72, f);
+		memcpy(rvUtxo, nUtxo, 72); // ok
 
 		uint32_t lSize = ftell(f);
-		UintToBytes((lSize / 544) -1, rvUtxo + 540);
+		UintToBytes((lSize / 76) -1, rvUtxo + 72);
 		fclose(f);
 		return;
 	
@@ -240,7 +246,7 @@ void UpdateUtxoSet() // JUST UPDATING VIRTUAL UTXO SET WITH utxo//tmp
 	rewind(f);
 	uint32_t boff = 0;
 
-	unsigned char buffer[540];
+	unsigned char buffer[72];
 
 	while (boff < lSize )
 	{
@@ -251,20 +257,20 @@ void UpdateUtxoSet() // JUST UPDATING VIRTUAL UTXO SET WITH utxo//tmp
 		if ( utxop == 0 )
 		{
 			// append
-			fread(buffer, 1, 540, f);
-			std::cout << "APPENDING TOU:" << BytesToUint(buffer + 532) << " SOLD: " << BytesToUint(buffer + 536) << std::endl;
+			fread(buffer, 1, 72, f);
+			std::cout << "APPENDING TOU:" << BytesToUint(buffer + 64) << " SOLD: " << BytesToUint(buffer + 68) << std::endl;
 			AddUtxo(buffer);
 			
 		}
 		else
 		{
 			// overwrite at 
-			fread(buffer, 1, 540, f);
-			std::cout << "APPENDING TOU:" << BytesToUint(buffer + 532) << " SOLD: " << BytesToUint(buffer + 536) << std::endl;
+			fread(buffer, 1, 72, f);
+			std::cout << "APPENDING TOU:" << BytesToUint(buffer + 64) << " SOLD: " << BytesToUint(buffer + 68) << std::endl;
 			OverWriteUtxo(buffer, utxop);
 
 		}
-		boff += 544;
+		boff += 76;
 		std::cout << "ADD ONE UTXO" << std::endl;
 
 	}
@@ -282,7 +288,7 @@ void AddUtxo(unsigned char * nUtxo)
 	if (f == NULL) { return; } // unvalid file
 	fseek(f, 0, SEEK_END);
 	// [2] write 
-	fwrite(nUtxo, 1, 540, f);
+	fwrite(nUtxo, 1, 72, f);
 	fclose(f);
 
 }
@@ -291,9 +297,9 @@ void OverWriteUtxo ( unsigned char * nUtxo, uint32_t index )
 	
 	// [0] getting utxo set file
 	uint32_t mfs = MAX_FILE_SIZE;
-	uint32_t filenum = (540 * index) / mfs;
-	uint32_t utxonumperfile = mfs / 540; // it is equal to 1 
-	uint32_t bOff = (540 * index) - (filenum*utxonumperfile);
+	uint32_t filenum = (72 * index) / mfs;
+	uint32_t utxonumperfile = mfs / 72; // it is equal to 1 
+	uint32_t bOff = (72 * index) - (filenum*utxonumperfile);
 	std::ostringstream s;
 	s << "utxos\\" << filenum;
 	std::string ss = s.str();
@@ -308,7 +314,7 @@ void OverWriteUtxo ( unsigned char * nUtxo, uint32_t index )
 	uint32_t lSize = ftell(f);
 	rewind(f);
 	// secure 
-	if (lSize < bOff + 540)
+	if (lSize < bOff + 72)
 	{
 		std::cout << "issue " << bOff << std::endl;
 		fclose(f);
@@ -317,16 +323,16 @@ void OverWriteUtxo ( unsigned char * nUtxo, uint32_t index )
 	std::cout << "OVERWRITING UTXO AT " << bOff << std::endl;
 	// [2] write 
 	fseek(f, bOff, SEEK_SET);
-	fwrite(nUtxo, 1, 540, f);
+	fwrite(nUtxo, 1, 72, f);
 	fclose(f);
 }
 
 
 void OverWriteVirtualUtxo(unsigned char * nUtxo)
 {
-	uint32_t boff = GetVirtualUtxoOffset(nUtxo) * 544;
-	std::cout << "OVERWRITING TOU:" << BytesToUint(nUtxo + 532) << " SOLD: " << BytesToUint(nUtxo + 536) <<  " at " << boff <<std::endl;
-	OverWriteFile("utxos\\tmp", boff + 4 , nUtxo, 540); // don't overwrite header so offset 4 bytes
+	uint32_t boff = GetVirtualUtxoOffset(nUtxo) * 76;
+	std::cout << "OVERWRITING TOU:" << BytesToUint(nUtxo + 64) << " SOLD: " << BytesToUint(nUtxo + 68) <<  " at " << boff <<std::endl;
+	OverWriteFile("utxos\\tmp", boff + 4 , nUtxo, 72); // don't overwrite header so offset 4 bytes
 }
 
 

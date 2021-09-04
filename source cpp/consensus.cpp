@@ -65,7 +65,7 @@ void UpdateBlockchain(const char * filePath)
 {
 	// [0] Update utxo set with temp utxo // seems not working 
 	UpdateUtxoSet();
-	// [0a] [MINER] Delete PTX based on pukey and TOU based on every TX
+	// [0a] [MINER] Delete PTX based on pukey and TOU based on every TX. WARNING THIS WILL NOT CHECK amount and other stuff
 	RefreshPTXFileFromVirtualUtxoSet(); //< gives error reading seems ok ( 0 bytes ) 
 	// [1] Delete temp utxo
 	remove("utxos\\tmp");
@@ -221,7 +221,7 @@ void GetRequiredTarget(unsigned char * buff, uint32_t firstbfIndex, unsigned cha
 		if (lblock == NULL)
 			return;
 
-		ComputeHashTargetB(GetBlockTimeStamp(cBlock), lblock, buff);
+		ComputeHashTarget(GetBlockTimeStamp(cBlock), lblock, buff);
 		free(lblock);
 	}
 	else
@@ -273,13 +273,14 @@ uint32_t GetRequiredTimeStamp(int index , uint32_t firstbfIndex, unsigned char *
 //IsBlockValid(Block b, Block prevb, uint MIN_TIME_STAMP, byte[] HASHTARGET, byte[] reqtarget, List<UTXO> vUTXO)
 bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblockindex, uint32_t MIN_TIME_STAMP, uint32_t bsize, unsigned char * reqtarget)
 {
+	PrintBlockInfo(b);
 	uint32_t bindex = GetBlockIndex(b);
 	// [0] verify hash root 
 	unsigned char * ublock = (unsigned char *)malloc(bsize - 36);
-	unsigned char buff[32];
+	unsigned char buff[36];
 	// memcpy everything except hash & nonce 
 	/*
-	Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 532+1 o] .
+	Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 64+1 o] .
 	. txn ( 2o ) . txs (variable)
 	*/
 	memcpy(ublock, b, 4);
@@ -320,7 +321,16 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 	}
 		
 	// [3] verify nonce x hashtarget 
-	//.... (not verified 4 da moment )
+	//  here put the nonce && the header hash in buff then compare to reqtarget...
+	memcpy(buff + 4, buff, 32); 
+	UintToBytes(GetBlockNonce(b), buff);
+	Sha256.init();
+	Sha256.write((char*)buff, 36); // hash first 36 bytes ( nonce + header ) 
+	if (cmp_256(Sha256.result(), reqtarget) > 0) {
+		std::cout << "[Block Refused] Invalid Nonce." << std::endl;
+		while ( true ){}
+		return false;
+	}
 	// [4] verify every tx 
 	uint32_t mReward = GetMiningReward(GetBlockIndex(b));
 	int gas = 0;
@@ -343,14 +353,14 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 		mReward += GetTXFee(txp);
 	}
 	// [5] Update miner virtual utxo with reward + mining reward (if no dust )
-	// PROBLEM HERE 
-	unsigned char  mutxo[544];
-	memset(mutxo, 0, 540);
-	if ( GetMinerTokenFlag(b) == 1 ) // +108
+	
+	unsigned char  mutxo[76];
+	memset(mutxo, 0, 72);
+	if ( GetMinerTokenFlag(b) == 1 ) // +108 means access to miner token  
 	{
-		unsigned char nutxo[540];
-		memcpy(nutxo, b + 109, 532);
-		memset(nutxo + 532, 0, 8);
+		unsigned char nutxo[72];
+		memcpy(nutxo, b + 109, 64); // set PU KEY for new utxo
+		memset(nutxo + 64, 0, 8);  // set 2 zeroed uint for new utxo ( TOU and sold )
 		GetVirtualUtxo(0, firstblockindex - 1, mutxo, nutxo); 
 		mReward /= 2; // PENALITY FOR NEW MINER ( REAL HARD ? )
 	
@@ -366,7 +376,7 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 		std::cout << "[Block Refused] Cannot proccess miner UTXO." << std::endl; 
 		return false;
 	}
-	UintToBytes(GetUtxoSold(mutxo) + mReward, mutxo + 536);
+	UintToBytes(GetUtxoSold(mutxo) + mReward, mutxo + 68);
 	std::cout << GetUtxoSold(mutxo) << std::endl; 
 	OverWriteVirtualUtxo(mutxo);
 
@@ -385,120 +395,39 @@ uint32_t GetMiningReward(uint32_t index )
 	return Reward;
 }
 
-
-void ComputeHashTargetB(uint32_t TimeStampB, unsigned char * prevbloc, unsigned char * buff)
+void ComputeHashTarget(uint32_t TimeStampB, unsigned char* prevbloc, unsigned char* buff)
 {
 	uint32_t TimeStampA = GetBlockTimeStamp(prevbloc);
 	uint32_t TimeSpent = TimeStampB - TimeStampA;
 
-	uint32_t QPLUS  = TARGET_TIME * TARGET_FACTOR;
+	uint32_t QPLUS = TARGET_TIME * TARGET_FACTOR;
 	uint32_t QMINUS = TARGET_TIME / TARGET_FACTOR;
 
 	if (TimeSpent > QPLUS)
-		TimeSpent = QPLUS; 
+		TimeSpent = QPLUS;
 
 	if (TimeSpent < QMINUS)
 		TimeSpent = QMINUS;
 
-	memcpy( buff, GetBlockHashTarget(prevbloc), 32);
+	memcpy(buff, GetBlockHashTarget(prevbloc), 32);
 	mul_256(buff, TimeSpent);
-	div_256(buff, TARGET_TIME);
+	shiftdiv_256(buff, POW_TARGET_TIME);
 
 	// then adjust if sup than max target.  
 	unsigned char ge_tar[] =
 	{
-		0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
-		0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
-		0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
-		0xAC,0x75,0x65,0xBD,0x93,0x5,0x0,0x0
+	0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
+	0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
+	0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
+	0xAC,0x75,0x65,0xBD,0x93,0x5,0xA,0x0
 
 	};
-
-	if (cmp_256(buff, ge_tar) > -1)
+	if (cmp_256(buff, ge_tar) > -1) {
 		memcpy(buff, ge_tar, 32);
-}
-void ComputeHashTarget(uint32_t index, unsigned char * buff) // this one is not used.
-{
-	// IT IS NOT USED.
-	memset(buff, 0, 32);
-}
-
-void TestProofOfWork()
-{
-	unsigned char buff[36];
-	uint32_t nonce = 0;
-	uint32_t index = 0;
-	unsigned char ge_tar[] =
-	{
-		0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
-		0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
-		0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
-		0xAC,0x75,0x65,0xBD,0x93,0x5,0x0,0x0
-
-	};
-	 char str[64];
-	auto start = std::chrono::high_resolution_clock::now();
-	int ctr_t = 0;
-	unsigned char faki[32];
-	while ( true )
-	{
-	
-		while (true)
-		{
-
-			nonce = rand() % UINT_MAX;
-			UintToBytes(nonce, buff);
-			Sha256.init();
-			Sha256.write((char *)buff, 36);
-			// for double hash func,  we can add here : Sha256.init(); Sha256.write(Sha256.result(), 32);
-			if (cmp_256(Sha256.result(), ge_tar) <= 0) { // seems not good
-				break;
-			}
-		}
-		index++;
-
-		
-		if( index == TARGET_CLOCK)  
-		{
-			ctr_t++;
-			
-			auto end = std::chrono::high_resolution_clock::now();
-			uint32_t TimeSpent = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-			uint32_t QPLUS = TARGET_TIME * TARGET_FACTOR;
-			uint32_t QMINUS = TARGET_TIME / TARGET_FACTOR;
-
-			if (TimeSpent > QPLUS)
-				TimeSpent = QPLUS;
-
-			if (TimeSpent < QMINUS)
-				TimeSpent = QMINUS;
-
-			mul_256(ge_tar, TimeSpent);
-			div_256(ge_tar, TARGET_TIME);
-
-			// then adjust if sup than max target.  
-			unsigned char max_tar[] =
-			{
-				0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
-				0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
-				0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
-				0xAC,0x75,0x65,0xBD,0x93,0x5,0x0,0x0
-
-			};
-
-			if (cmp_256(ge_tar, max_tar) > 0)
-				memcpy(ge_tar, max_tar, 32);
-
-
-			start = std::chrono::high_resolution_clock::now();
-			index = 0;
-			std::cout << ctr_t << std::endl;
-		}
-	
 	}
-	
-
 }
+		
+
 
 void GetRelativeHashTarget(uint32_t index, unsigned char * buff) //needed if new block struct system.
 {

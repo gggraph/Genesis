@@ -5,12 +5,44 @@
 #include <windows.h>
 #include "vm.h"
 #include "arith256.h"
+#include "tx.h"
 
+/*
+TODO 
+	* THINK OF PTX FILE DATA STRUCTURE 
+	* CREATE PTX ADDING FUNCTION TO PTX FILE
+	* CREATE PTXFILLING DURING MINING PROCCESS. 
+	* JUST TEST IT
+	* 
+	* APPLY NETWORKING
+	* APPLY SOME SMARTCONTRACT STUFF TO TEST IT
+	* APPLY COMMAND LINE
+	* DONE. REVIEW COMMENT AND CODE
+*/
 
 int main(int argv, char** args)
 {
-	TestVM();
+	/*
+	unsigned char ge_tar[] =
+	{
+		0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
+		0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
+		0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
+		0xAC,0x75,0x65,0xBD,0x93,0x5,0x0,0x0
+
+	};
+	std::cout << "before div " << std::endl;
+	for (int i = 0; i < 32; i++) {
+		std::cout << (int)ge_tar[i] << std::endl;
+	}
+	//shiftdiv_256(ge_tar, POW_TARGET_TIME); // working
+	mul_256(ge_tar, 2048);
+	std::cout << "after div " << std::endl;
+	for (int i = 0; i < 32; i++) {
+		std::cout << (int)ge_tar[i] << std::endl;
+	}
 	while ( 1){}
+	*/
 	/*
 	TestVM();
 	
@@ -29,92 +61,63 @@ int main(int argv, char** args)
 	while ( true ){}
 	*/
 
-	while ( 1){}
+	// [0] init software
 	InitChain();
 	VerifyFiles();
 	LoadBlockPointers();
-	
-	// Mine stuff
-	unsigned char pukey[532]; 
-	int i = 1;
-	while ( i < 7 )
-	{
-		char wblockpath[255];
+
+	// [0b] creating pairkeys if not existing
+	MakeSECP256K1PairKeys();
+
+	// [1] print genesis
+	unsigned char* gb = GetOfficialBlock(0);
+	PrintBlockInfo(gb);
+	free(gb);
+
+
+	// [2] start mining from public Key 
+	unsigned char pukey[64]; //  pukey
+	ReadFile("puk", 0, 64, pukey); // fill pukey buffer 
+
+	char wblockpath[255];
+	Mine(pukey, 5000, 0, wblockpath);
+
+	// proccess blocks file
+	ProccessBlocksFile(wblockpath);
+	// Start Mining 7 times to get a Offical Blockchain update.
+	for (int i = 0; i < 7; i++) {
 		Mine(pukey, 5000, 0, wblockpath);
-
-		/* print block info ... */
-		unsigned char buffer[255]; 
-		ReadFile(wblockpath, 0, 8, buffer);
-		uint32_t fi = BytesToUint(buffer);
-		uint32_t li = BytesToUint(buffer+4);
-		uint32_t blocknum = (li - fi) + 1;
-		std::cout << "____________________TMP INFO________________________" << std::endl;
-		std::cout << "Number of blocks : " << blocknum << " | first block index " << fi << " | last block index " << li << std::endl;
-		for (int a = 0 ; a < blocknum; a++ )
-		{
-			int ptr = 8 + (a * 4);
-			ReadFile(wblockpath, ptr, 4, buffer);
-			std::cout << "ptr found at block #" << fi + a << " : " << BytesToUint(buffer) << "(reading at " << ptr << ")" << std::endl;
-		}
-		std::cout << "____________________________________________________" << std::endl;
-		
-		unsigned char * b = GetUnofficialBlock(wblockpath, i); // it is deleted ....
-		if (b != NULL )
-		{
-			PrintBlockInfo(b);
-			free(b);
-			
-		}
-		else
-		{
-			std::cout << "BLOCK NULL ... ";
-			//while (1) {}
-		}
 		ProccessBlocksFile(wblockpath);
-		i++;
 	}
-	// load pukey at ptr 0 
-
-	// ALL SEEMS OK BUT I DONT UNDERSTANT
-	uint32_t utxop =  GetUtxoPointer(pukey);
-	std::cout << " Pointer found at : " << utxop << std::endl; // not working :) 
-	unsigned char utxobuff[540];
+	// Get My Utxo Pointer
+	uint32_t utxop = GetUtxoPointer(pukey);
+	std::cout << " Pointer found at : " << utxop << std::endl;
+	unsigned char utxobuff[72];
 	GetUtxo(utxop, utxobuff);
 	std::cout << " sold : " << GetUtxoSold(utxobuff) << std::endl;
-	std::cout << "latest index " <<GetLatestBlockIndex(true) << std::endl;
-	unsigned char * b = GetOfficialBlock(6); // it is deleted ....
-	if (b != NULL)
-	{
-		PrintBlockInfo(b);
-		free(b);
+	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
 
-	}
-	else
-	{
-		std::cout << "BLOCK NULL ... ";
-		//while (1) {}
-	}
+	
+	// create a transaction
+	unsigned char prkey[32]; //  
+	ReadFile("prk", 0, 32, prkey); // fill pukey buffer gmme erroe here
+	CreateDefaultTransaction(prkey, utxop, GetUtxoTOU(utxobuff) + 1, 5000, 0, 10, utxop, NULL);
+	while (1) {}
 
-	while ( i < 20 ) // issue
-	{
-		char wblockpath[255];
+
+
+	// Mine 60 times with my pointer to get my reward
+	for (int i = 0; i < 60; i++) {
 		Mine(pukey, 5000, utxop, wblockpath);
-		unsigned char * b = GetUnofficialBlock(wblockpath, i); // it is deleted ....
-		if (b != NULL)
-		{
-			PrintBlockInfo(b);
-			free(b);
-
-		}
-		else
-		{
-			std::cout << "BLOCK NULL ... ";
-			while (1) {}
-		}
 		ProccessBlocksFile(wblockpath);
-		i++;
 	}
-	while ( true ){}
+
+	// print my super new updated sold ...
+	GetUtxo(utxop, utxobuff);
+	std::cout << " sold : " << GetUtxoSold(utxobuff) << std::endl;
+	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
+
+	
 
 }
 
@@ -168,7 +171,7 @@ void InitChain () // delete all files.
 void CreateGenesisBlock() 
 {
 	/*
-		Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 532+1 o] .
+		Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 64+1 o] .
 		. txn ( 2o ) . txs (variable) 
 	*/
 	// ULTRA FAST IMP
@@ -187,12 +190,12 @@ void CreateGenesisBlock()
 	// create utxos file 
 	_wmkdir(L"utxos");
 	//create first utxo file 
-	unsigned char futxo[540];
-	memset(futxo, 0, 540);
+	unsigned char futxo[72];
+	memset(futxo, 0, 72);
 	FILE* f = fopen("utxos\\0", "ab");
 	if (f == NULL) return;
 	rewind(f);
-	fwrite(futxo, 1, 540, f);
+	fwrite(futxo, 1, 72, f);
 	fclose(f);
 	// + secure
 	DeleteDirectory("sc");

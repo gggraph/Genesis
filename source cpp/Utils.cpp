@@ -75,7 +75,6 @@ bool DeleteDirectory(const char * dirName)
 		return false;
 	
 	std::experimental::filesystem::remove_all(dirName);
-
 	return true;
 }
 
@@ -98,7 +97,6 @@ void ReadFile(const char * fname, long position, int length, unsigned char *data
 			std::cout << "error file read " << n << std::endl;
 		}
 		fclose(f);
-		while (1){}
 		return; 
 	}
 	fclose(f);

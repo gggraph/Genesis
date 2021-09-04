@@ -205,7 +205,7 @@ bool LoadContract( uint32_t bIndex, uint32_t TxIndex, bool _newcontract)
 	/**/
 	uint32_t entriesnum = BytesToUint(fdata);
 	if (entriesnum == 0)
-		return false; //NO ENTRY IS NOT ALLOWED
+		return false; //NO ENTRY IS NOT ALLOWED?
 
 	unsigned char * tdata = (unsigned char *)malloc(lSize - (entriesnum * 4) - 4);
 	memcpy(tdata, fdata + (entriesnum * 4) + 4, lSize - (entriesnum * 4) - 4);
@@ -254,10 +254,10 @@ int RunVM(int gas, int _guserlimit) // return gas used.
 	/*
 									ISSUE
 
-			*SIB MODE + DSP AS BASE IS NOT WORKING
-			*IMMEDIATE IS ALWAYS 32BIT WE DONT USE D-BIT FOR ASSIGN CONSTANT DEPTH. 
-			WE COULD USE FIRST REG BIT TO IMPLEMENT IT ( CAUSE WE DONT NEED OPCODE EXTENSION)
-			*MOST OF STUFF DONT IMPLEMENT S-BIT ...
+			*	SIB MODE + DSP AS BASE IS NOT WORKING
+			*	IMMEDIATE IS ALWAYS 32BIT WE DONT USE D-BIT FOR ASSIGN CONSTANT DEPTH. 
+				WE COULD USE FIRST REG BIT TO IMPLEMENT IT ( CAUSE WE DONT NEED OPCODE EXTENSION)
+			*	MOST OF STUFF DONT IMPLEMENT S-BIT ...
 		
 	*/
 	int i_gas = gas;

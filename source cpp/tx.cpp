@@ -3,15 +3,15 @@
 #include "vm.h"
 
 /*
-[TX header]
+[TX header] ( 85 bytes )
 PuKey Pointer   (4 bytes)
-PrKey Signature (512 bytes)
+PrKey Signature (64 bytes)
 TOU             (4 bytes)
 Purishment   	(4 byte )
 Fee             (4 byte ) (reward for miner)
 Byte ID         (1 byte )
-[TX data]
 Data Size       (4 bytes)
+[TX data]
 Data            (Data Size)
 */
 
@@ -33,10 +33,12 @@ bool IsTransactionValid(unsigned char * TX, uint32_t blockindextime, int * gas, 
 
 bool VerifyHeaderTransaction(unsigned char * TX, uint32_t blockindextime)
 {
-	//[0] Verify RSA Signature ( type of sign should depend on byteflag )
-	//....
+	//[0] Verify SECP256K1 Signature ( type of sign should depend on byteflag )
+	if (!isSignatureValid(TX)) {
+		return false;
+	}
 	//[1] Verify Token Of Uniqueness
-	unsigned char  sutxo[544];
+	unsigned char  sutxo[76];
 	GetVirtualUtxo(BytesToUint(TX), blockindextime, sutxo);
 	if (GetTXTokenOfUniqueness(TX) != GetUtxoTOU(sutxo) + 1) 
 	{
@@ -58,14 +60,14 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime, int * gas)
 		DFT Structure : 
 		byte flag (1o) indicates if receiver exists in bc or not 
 		amount                  (4o)
-		receiver utxop or puKey (4o or 532 o ) 
+		receiver utxop or puKey (4o or 64 o ) 
 	
 	*/
 	//[0] Append/Get sUTXO and rUTXO 
-	unsigned char  sutxo[544];
-	unsigned char  rutxo[544];
+	unsigned char  sutxo[76];
+	unsigned char  rutxo[76];
 	GetVirtualUtxo(BytesToUint(TX), blockindextime, sutxo);
-
+	
 	uint32_t MIN_FEE = 0; // native fee for proccess DFT. 
 	unsigned char * TXDATA = GetTXData(TX); // just a ptr
 	if (*TXDATA == 0)
@@ -74,29 +76,33 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime, int * gas)
 	}
 	else
 	{
-		unsigned char nutxo[540];
-		memcpy(nutxo, TXDATA + 5, 532);
-		memset(TXDATA + 537, 0, 8);
+		unsigned char nutxo[72];
+		memcpy(nutxo, TXDATA + 5, 64);
+		memset(TXDATA + 69, 0, 8);
 		GetVirtualUtxo(0, blockindextime, rutxo, nutxo);
 		MIN_FEE += 50; // + penality for writing new account
 	}
-
+	
 	uint32_t txfee = GetTXFee(TX);
 	uint32_t totCost = BytesToUint(TXDATA + 1) + txfee;
-
-	if (txfee < MIN_FEE)
+	
+	if (txfee < MIN_FEE) {
 		std::cout << "[BLOCK REFUSED] Insuffisant fee in a transaction";  return false;
+	}
+		
 
-	if ( totCost > GetUtxoSold(sutxo))
+	if (totCost > GetUtxoSold(sutxo)) {
 		std::cout << "[BLOCK REFUSED] Insuffisant sold in a transaction";  return false;
+	}
 
-	// update sender sold and tou. update receiver sold.  
-	UintToBytes(GetTXTokenOfUniqueness(TX), sutxo + 532);
-	UintToBytes(GetUtxoSold(sutxo) - totCost, sutxo + 536);
-	UintToBytes(GetUtxoSold(rutxo) + BytesToUint(TXDATA + 1), rutxo + 536);
+	// update sender sold and tou. update receiver sold.
+	
+	UintToBytes(GetTXTokenOfUniqueness(TX), sutxo + 64);
+	UintToBytes(GetUtxoSold(sutxo) - totCost, sutxo + 68);
+	UintToBytes(GetUtxoSold(rutxo) + BytesToUint(TXDATA + 1), rutxo + 68);
 	OverWriteVirtualUtxo(sutxo);
 	OverWriteVirtualUtxo(rutxo);
-	// return
+	
 	return true;
 
 }
@@ -104,7 +110,7 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime, int * gas)
 bool VerifyCST(unsigned char * TX, uint32_t blockindextime, int * gas, uint32_t blocindex, uint32_t txindex)
 {	
 	// [0] Verify Sender has suffisant sold to pay the fee
-	unsigned char  sutxo[544];
+	unsigned char  sutxo[76];
 	GetVirtualUtxo(BytesToUint(TX), blockindextime, sutxo);
 	uint32_t txfee = GetTXFee(TX);
 	if (GetUtxoSold(sutxo) < txfee) 
@@ -206,16 +212,40 @@ bool VerifyCRT(unsigned char * TX, uint32_t blockindextime, int * gas)
 
 bool isSignatureValid(unsigned char * TX)
 {
-	// Verify Signature ( hash the TX without the signature then verify . 
-	/*Well, the RSA operation can't handle messages longer than the modulus size. That means that if you have a 2048 bit RSA key, 
-	you would be unable to directly sign any messages longer than 256 bytes long (and even that would have problems, because of lack of padding).
-	*/
-	// sign = s=(h^d)*(mod n)
-	// if correct : (this is true : )
-	// h'=s^e and mod n = (h^d)^e and mod n = h
-	return true;
+	unsigned char puKey[64];
+	
+	GetTXsPuKey(puKey, TX);
+	
+	// verify if puKey is Valid SECP
+	if (!uECC_valid_public_key(puKey, uECC_secp256k1())) {
+		std::cout << "[WRONG TX] Invalid Public Key for SECP256K1 standard." << std::endl;
+		return false;
+	}
+
+	
+	// craft TX HASH
+	int ds = GetTXDataSize(TX);
+	unsigned char * data = (unsigned char*)malloc(21+ds);
+	memcpy(data, TX, 4);
+	std::cout << 68 + 17 + ds << std::endl;
+	memcpy(data + 4, TX + 68, 17 + ds);
+	Sha256.init();
+	Sha256.write((char*)data, 21 + ds); // hash transaction 
+	unsigned char hash[32];
+	memcpy(hash, Sha256.result(), 32);
+	free(data); // release heap alloc
+	//verify 
+	if (uECC_verify(puKey, hash, 32, GetTXSignature(TX), uECC_secp256k1()) == 1) {
+		return true;
+	}
+	else {
+		std::cout << "[WRONG TX] Invalid Signature." << std::endl;
+		return false;
+	}
+	
 }
 
+//WILL BE REMOVED
 void RefreshPTXFileFromVirtualUtxoSet()
 {
 	// [0] load ptx file in memory (use malloc)
@@ -235,8 +265,8 @@ void RefreshPTXFileFromVirtualUtxoSet()
 	rewind(f);
 	// [1] iterating through all ptx in file
 	uint32_t boff = 0; 
-	unsigned char utxo[544];
-	memset(utxo, 0, 544);
+	unsigned char utxo[76];
+	memset(utxo, 0, 76);
 	while ( boff < fsize)
 	{
 		// don't append if ( TOU is LOWER than TOU get from UNOFFICIAL UTXO SET ), don't append if Purishing Time ...
@@ -254,8 +284,7 @@ void RefreshPTXFileFromVirtualUtxoSet()
 
 		// GET THE WHOLE TX LENGTH 
 
-		
-		uint32_t TXsize = 533 + GetTXDataSize(tmpdat + boff);
+		uint32_t TXsize = 65 + GetTXDataSize(tmpdat + boff);
 		if ( ctou < ptou && pts > cts )
 		{
 			// append 
@@ -270,4 +299,175 @@ void RefreshPTXFileFromVirtualUtxoSet()
 	rename("nptx", "ptx");
 	std::cout << "PTX file Refreshed with success " << std::endl;
 
+}
+                                            // ______________________________ TRANSACTION CREATOR __________________________
+/*
+[TX header] ( 85 bytes )
+PuKey Pointer   (4 bytes)
+PrKey Signature (64 bytes)
+TOU             (4 bytes)
+Purishment   	(4 byte )
+Fee             (4 byte ) (reward for miner)
+Byte ID         (1 byte )
+Data Size       (4 bytes)
+[TX data]
+Data            (Data Size)
+
+
+DFT Structure :
+		byte flag (1o) indicates if receiver exists in bc or not
+		amount                  (4o)
+		receiver utxop or puKey (4o or 64 o )
+*/
+
+bool AddTransactionToPTXFile( unsigned char * TX ) 
+{
+	// Verify signature. Verify Data Size && add it ... 
+	return false;
+}
+
+// this algo will sort every TRANSACTION IN PTX file BY THE FOLLOWING FORMAT : 
+/*
+    - tx blocks per average fee volume in descending order 
+	[ SORT BY PUKEY ID                 ]
+	[ >SORT BY TOU                     ]
+	[ >>COMPUTE ACTUALLY UTXO FROM SOLD]
+	
+*/
+
+
+// Long proccess that verify each 
+void RefreshPendingTransactionFile(int _purishOffset = 0) {
+
+	// verify each header TOU, Purishment,  ... etc.
+	// 
+	// [0] load ptx file in memory (use malloc)
+	FILE* f = fopen("ptx", "rb");
+	if (f == NULL) { std::cout << "error reading..." << std::endl; return; }
+	fseek(f, 0, SEEK_END);
+	uint32_t fsize = ftell(f);
+	rewind(f);
+
+	unsigned char* tmpdat = (unsigned char*)malloc(fsize);
+	fread(tmpdat, 1, fsize, f);
+	fclose(f);
+	// [0] create a copy
+	f = fopen("nptx", "ab");
+	if (f == NULL) { std::cout << "error reading..." << std::endl; return; }
+	rewind(f);
+	uint32_t boff = 0;
+	unsigned char utxobuffer[72];
+	while (boff < fsize) {
+		// /!\ every signature has been already verified. 
+		
+		bool _isValid = true;
+
+		// [ 0 ]  verify purishment time 
+		if (GetTimeStamp() + _purishOffset < GetTXPurishmentDate(tmpdat + boff))
+			_isValid = false;
+		// [ 1 ] verify TOU based on official blockchain only. We will need to write a TOKENPUZZLESOLVERFUNCTION if needed 
+		GetUtxo(BytesToUint(tmpdat + boff), utxobuffer);
+		if (GetUtxoTOU(utxobuffer) != GetTXTokenOfUniqueness(tmpdat + boff) - 1)
+			_isValid = false;
+	}
+
+}
+
+bool CreateDefaultTransaction(unsigned char * prKey, uint32_t utxop,  uint32_t nTOU, uint32_t PurishmentTime, uint32_t fee, 
+							 uint32_t  amount, uint32_t rutxop, unsigned char * rpuKey) {
+
+	
+	// [0] build unsign data
+	int msg_size = 30;
+	if (rutxop == 0) 
+		msg_size += 60;
+
+	PurishmentTime += GetTimeStamp(); // apply timestamp to pushment time 
+	unsigned char* unsigned_data = (unsigned char*)malloc(msg_size); // do some alloc 
+	
+	memcpy(unsigned_data, &utxop, 4);
+	memcpy(unsigned_data+4, &nTOU, 4);
+	memcpy(unsigned_data+8, &PurishmentTime, 4);
+	memcpy(unsigned_data + 12, &fee, 4);
+	unsigned_data[16] = 0; // flag byte for DFT
+	// setting datasize depending of receiver existence in db,  byteflag and co ..
+	if (rutxop == 0) {
+		UintToBytes(69, unsigned_data + 17);
+		unsigned_data[21] = 1; // receiver not existing
+		memcpy(unsigned_data + 22, &amount, 4);
+		memcpy(unsigned_data + 26, rpuKey, 64);
+	}
+	else 
+	{
+		UintToBytes(9, unsigned_data + 17);
+		unsigned_data[21] = 0; // receiver exist
+		memcpy(unsigned_data + 22, &amount, 4);
+		memcpy(unsigned_data + 26, &rutxop, 4);
+	}
+	// [1] hash 
+	Sha256.init();
+	Sha256.write((char*)unsigned_data, msg_size); // hash transaction 
+	unsigned char hash[32];
+	memcpy(hash, Sha256.result(), 32);
+	
+	// [1] sign 
+	uint8_t sign[64];
+	uECC_sign(prKey, hash, 32, sign, uECC_secp256k1());
+	
+	// craft the tx data file
+	unsigned char* signed_data = (unsigned char*)malloc(msg_size + 64);
+	memcpy(signed_data, unsigned_data, 4);
+	memcpy(signed_data + 4 , sign, 64);
+	memcpy(signed_data + 68 , unsigned_data + 4, msg_size - 4); // copy the rest
+	free(unsigned_data); // release heap alloc
+
+	if (!isSignatureValid(signed_data))
+		return false;
+
+	AddTransactionToPTXFile(signed_data, msg_size + 64);
+	
+
+	return true;
+	// 
+	// go further if you want a backup file
+	// 
+	// now build file at roots
+	FILE* f = fopen("newtransaction", "ab");
+	if (f == NULL) return false;
+	rewind(f);
+	fwrite(signed_data, 1, msg_size + 64, f);
+	fclose(f);
+	
+	free(signed_data); // release heap alloc
+	return true;
+}
+
+bool MakeSECP256K1PairKeys() {
+
+	uint8_t pukey[64];
+	uint8_t prkey[32];
+	uECC_make_key(pukey, prkey, uECC_secp256k1());
+	if (!uECC_valid_public_key(pukey, uECC_secp256k1())) {
+		std::cout << "Something happened wrong" << std::endl;
+		return false;
+	}
+	// check if key files already exists ... 
+	if (FileExists("puk") || FileExists("prk")) {
+		std::cout << "Pair Keys file has been already found. aborted." << std::endl;
+		return false;
+	}
+	// now put them in root directory
+	FILE* f = fopen("puk", "ab");
+	if (f == NULL) return false;
+	rewind(f);
+	fwrite(pukey, 1, 64, f);
+	fclose(f);
+	f = fopen("prk", "ab");
+	if (f == NULL) return false;
+	rewind(f);
+	fwrite(prkey, 1, 32, f);
+	fclose(f);
+	std::cout << "[SUCCESS] SECP256K1 Public and private keys are located in root folder as prk and puk files." << std::endl;
+
+	return true;
 }
