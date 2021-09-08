@@ -19,8 +19,7 @@ uint32_t GetBlockTimeStamp(unsigned char * block);
 unsigned char * GetBlockHashTarget(unsigned char * block);
 uint32_t GetBlockNonce(unsigned char * block);
 unsigned char GetMinerTokenFlag(unsigned char * block);
-void GetMinerKey(unsigned char * buffer, unsigned char * block);
-uint32_t GetTransactionNumber(unsigned char * block);
+uint16_t GetTransactionNumber(unsigned char * block);
 
 unsigned char * GetBlockTransaction(unsigned char * block, uint32_t index);
 void GetTXsPuKey(unsigned char * buffer, unsigned char * TX);

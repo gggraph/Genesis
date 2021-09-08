@@ -121,6 +121,9 @@
     <ClCompile Include="consensus.cpp" />
     <ClCompile Include="Genesis.cpp" />
     <ClCompile Include="Mine.cpp" />
+    <ClCompile Include="NetClient.cpp" />
+    <ClCompile Include="NetfileManager.cpp" />
+    <ClCompile Include="NetServer.cpp" />
     <ClCompile Include="sha256.cpp" />
     <ClCompile Include="tx.cpp" />
     <ClCompile Include="uECC.cpp" />
@@ -137,6 +140,9 @@
     <ClInclude Include="consensus.h" />
     <ClInclude Include="Genesis.h" />
     <ClInclude Include="Mine.h" />
+    <ClInclude Include="NetClient.h" />
+    <ClInclude Include="NetfileManager.h" />
+    <ClInclude Include="NetServer.h" />
     <ClInclude Include="params.h" />
     <ClInclude Include="sha256.h" />
     <ClInclude Include="tx.h" />

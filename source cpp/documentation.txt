@@ -111,7 +111,7 @@ _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-
 	the blockchain with specific transaction type : CRT transaction (CONTRACT-REQUEST-TRANSACTION)
 
 	As CST, CRT struct is the same but data is built diffently:
-	Smart Contract pointer    (4 bytes)
+	Smart Contract pointer    (8 bytes)
 		[*] Push  Operations  (4 bytes) -> repeated a specific amount of time determined by validator with data size
 	Smart Contract Entry Jump (4 bytes)
 
@@ -133,7 +133,7 @@ _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-
 																		Virtual Machine
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 
-[INSTRUCTION FORMAT A] 
+[INSTRUCTION FORMAT] 
 
  FORMAT 0 EX: (1 operand)
                 INC MEM
@@ -141,7 +141,7 @@ _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-
 
                 size & struct : [FLAG] [AVAL] [5 bytes] 
                 
- FORMAT 1 EX: (2 operands)
+             FORMAT 1 EX: (2 operands)
                 MOV REG, VAL
                 MOV REG, REG
                 MOV REG, MEM
@@ -167,7 +167,7 @@ _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-
                 OPCODE  FLAG-A   A     FLAG-B   B
                 ( 1b )   (1b)  (1-4b)   (1b)  (1-4b)
 
-PROCESSING INSTRUCTION:
+[PROCESSING INSTRUCTION]
 
 Get OPCODE at Program Counter Value.
 DEPENDING OF OPCODE	(map in memory either one operand (bit 0) , either 2 operands (bit 1)), GET OPERAND AND FLAGOPERAND
@@ -181,54 +181,6 @@ ADD PC COUNTER DEPENDING OF OPERANDS NUMBER
 
 limitiation : NO PREFIX, FIX OPERANDS SIZE PER OPCODE.
 
-[INSTRUCTION FORMAT B]  / NO REGISTER. REGISTER IS MEMORY. (BETTER VM ARCHITECTURE) LIGHTER. FASTER.
-
- opr   ~#0
- 	      OPCODE 
- opr   ~#1 
-              OPCODE  flag MEM
-
- opr   ~#2
-              OPCODE  flag MEM VALUE
-              OPCODE  flag MEM MEM
-
- flag is 8 bit ( 0 1 2 3 4 ) :  16-bit | 32-bit | H/L | MEM/IMM | I/D [A] | I/D [B] | 0 | 0
- Last 3 bits have no use. 
-              
- PROCESSING INSTRUCTION:
- Get  OPCODE at Program Counter Value & read flag state. 
- Get  Operand numbers from (memory map (either bit 0 either bit 1) .
- Load Operands into arguments.
- Perform OPCODE instruction from argument.  
- Add PC Counter depending of operands number.
- 
-INDIRECT ADDRESSING : 
-
-            Indirect/Direct means either MEM will be set with VALUE or *VALUE (pointer)
-	    
-	    example: INC IS 0x02. ADD IS 0x00. SUB IS 0x01.  VAR IS AT 0xA.  EAX IS AT 0X0.  ADD IS 0x03
-
-            INC dword [EAX]    -> INDIRECT                                 -> 0x02 0x24 0x0 (flag 0100100)
-                            will perform:  *(ram+*(ram+0x0)) ++ 
-              
-            INC EAX      -> DIRECT                                         -> 0x02 0x20 0x0 (flag 0100000)
-                            will perform:  *(ram+0x0) ++
-
-            INC dword [VAR]    -> INDIRECT : binary                        -> 0x02 0x24 0xA (flag 0100100)
-                            will perform:  *(ram+*(ram+0xA)) ++
-			    
-	    (here depth has to be set for non register address )
-            INC dword VAR   - > DIRECT                                     -> 0x02 0x20 0xA  (flag 01000000) 
-                            will perform:  *(ram+0xA)) ++ 
-	    
-	    ADD EAX, [VAR]                                              ->   0x03 0x44 0x0 0xA (flag 01000100 )
-	     		    will perform:  *(ram+0x0)) +=  *(ram+*(ram+0xA))
-	    ADD EAX, VAR                                                ->   0x03 0x20 0x0 0xA (flag 01000000 ) 
-			    will perform:  *(ram+0x0)) +=  *(ram+0xA)
-			    
-            ( this one is not proccess by the machine. assembler just do the thing for us ) 
-            INC word [EAX+6]  ->  0x00 0x50 0x0 0x6  |||||||||  0x02 0x88 0x0 |||||||||  0x01 0x50 0x0 0x6   
-                            will perform: *(ram+0x00) += 6; *(ram+*(ram+0x0)) ++; *(ram+0x00) -= 6;
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
 																			Issues 
 -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_

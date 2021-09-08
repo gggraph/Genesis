@@ -283,19 +283,23 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 	Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 64+1 o] .
 	. txn ( 2o ) . txs (variable)
 	*/
+	
+	// there is something wrong with sha256 func() when existing txs . 
 	memcpy(ublock, b, 4);
-	memcpy(ublock+4, b+36, 68);
+	memcpy(ublock+4, b+36, 68); 
 	memcpy(ublock + 72, b + 108, bsize - 108);
 	Sha256.init();
-	Sha256.write((char *)ublock, bsize - 36);
+	Sha256.write((char *)ublock, bsize - 36); 
 	memcpy(buff, Sha256.result(), 32);
 	if (memcmp(buff, GetBlockHash(b), 32) != 0)
 	{
+		PrintRawBytes(b, bsize);
 		std::cout << "[Block Refused] Wrong hash root" << std::endl; 
 		printHash(buff);
 		printHash(GetBlockHash(b));
 		free(ublock);
 		return false;
+
 	}
 		
 	free(ublock);
@@ -303,7 +307,6 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 	// [1] verify previous hash
 	if ( memcmp(GetBlockPreviousHash(b), GetBlockHash(prevb), 32) != 0)
 	{
-		
 		std::cout << "[Block Refused] Wrong previous hash" << std::endl;
 		printHash(GetBlockHash(prevb));
 		printHash(GetBlockPreviousHash(b));
@@ -321,6 +324,11 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 	}
 		
 	// [3] verify nonce x hashtarget 
+	// 	  
+	if (memcmp(GetBlockHashTarget(b), reqtarget, 32) != 0) {
+		std::cout << "[Block Refused] Invalid Hash Target" << std::endl;
+		return false;
+	}
 	//  here put the nonce && the header hash in buff then compare to reqtarget...
 	memcpy(buff + 4, buff, 32); 
 	UintToBytes(GetBlockNonce(b), buff);
@@ -328,8 +336,7 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 	Sha256.write((char*)buff, 36); // hash first 36 bytes ( nonce + header ) 
 	if (cmp_256(Sha256.result(), reqtarget) > 0) {
 		std::cout << "[Block Refused] Invalid Nonce." << std::endl;
-		while ( true ){}
-		return false;
+		//return false;
 	}
 	// [4] verify every tx 
 	uint32_t mReward = GetMiningReward(GetBlockIndex(b));
@@ -337,6 +344,7 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 	for (int i = 0 ; i < GetTransactionNumber(b); i++ )
 	{
 		unsigned char * txp = GetBlockTransaction(b, i); // don't need to free it. it's in b mem.
+		
 		if ( !IsTransactionValid(txp, firstblockindex - 1, &gas, bindex, i)  )
 		{
 			std::cout << "[Block Refused] Transaction not valid." << std::endl; 
@@ -348,7 +356,7 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 			std::cout << "[Block Refused] Transaction not valid. Gas Out." << std::endl;
 			return false;
 		}
-			
+		
 
 		mReward += GetTXFee(txp);
 	}

@@ -7,7 +7,7 @@
 bool VerifyFiles();
 void CreateGenesisBlock();
 void InitChain();
-
+void Demo();
 /*
 unsigned char GENESIS_TARGET [] =
 {

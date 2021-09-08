@@ -1,6 +1,6 @@
 #include "Bloc.h"
 #include "sha256.h";
-
+#include "tx.h"
 unsigned char* BLOCKSPTR;
 uint32_t LatestBlockIndex;
 
@@ -25,8 +25,13 @@ void PrintBlockInfo(unsigned char * b )
 	std::cout << "nonce :" << val << std::endl;
 	val = GetTransactionNumber(b);
 	std::cout << "TXN :" << val << std::endl;
+	for (int i = 0; i < val; i++) {
+		PrintTransaction(GetBlockTransaction(b, i));
+	}
 	std::cout << "-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-" << std::endl;
 }
+
+
 void LoadBlockPointers()
 {
 	if ( BLOCKSPTR != NULL)
@@ -223,12 +228,12 @@ unsigned char * GetBlock(const char *filePath, uint32_t bOff)
 	ReadFile(filePath, eOff, 2, uintbuff);
 	uint32_t txn = BytesToShort(uintbuff);
 	std::cout << "TXN is " << txn << std::endl;
-	eOff += 2; // ??
+	eOff += 2; // adding ushort tx numbre
 	while (txn > 0)
 	{
 		eOff += 81; // jump to datasize 
 		ReadFile(filePath, eOff, 4, uintbuff); // cause error
-		eOff += BytesToUint(uintbuff);
+		eOff += BytesToUint(uintbuff) + 4;
 		txn--;
 	}
 	// so now i know exactly the number of bytes 
@@ -246,6 +251,7 @@ unsigned char * GetBlock(const char *filePath, uint32_t bOff)
 	*/
 	eOff -= bOff;
 	unsigned char * block = (unsigned char*)malloc(eOff);
+	std::cout << "allocate " << eOff << " bytes for new block in heap " << std::endl;
 	ReadFile(filePath, bOff, eOff, block);
 
 	std::cout << "block read success read at " << bOff << " (size " << eOff << " bytes)" << std::endl;
@@ -292,7 +298,7 @@ unsigned char GetMinerTokenFlag(unsigned char * block)
 }
 
 
-uint32_t GetTransactionNumber(unsigned char * block)
+uint16_t GetTransactionNumber(unsigned char * block)
 {
 
 	int off;
@@ -301,7 +307,9 @@ uint32_t GetTransactionNumber(unsigned char * block)
 	else
 		off = 173;
 
-	std::cout << "txn read at " << off << std::endl;
+	std::cout << "txn read at " << off << std::endl; // generate an error here 
+	std::cout << "txn is " << BytesToShort(block + off) << std::endl;
+ 
 	return BytesToShort(block + off);
 }
 
@@ -310,11 +318,13 @@ unsigned char * GetBlockTransaction(unsigned char * block, uint32_t index) // re
 	if (index > GetTransactionNumber(block))
 		return NULL;
 
+
 	int off;
+	// probleme here so add two bytes ... because txn is not used
 	if (GetMinerTokenFlag(block) == 0)
-		off = 113;
+		off = 115; // 113
 	else
-		off = 173; // the starting offset if pub key is delivered in minertoken 
+		off = 175; // 173// the starting offset if pub key is delivered in minertoken 
 
 	while ( index > 0 )
 	{
@@ -322,6 +332,7 @@ unsigned char * GetBlockTransaction(unsigned char * block, uint32_t index) // re
 		off += BytesToUint(block+ off) + 4;  // jump tx data size + [4 ( the data of datasize information )]
 		index--;
 	}
+
 	return block + off;
 	
 } 

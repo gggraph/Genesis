@@ -32,6 +32,15 @@ void SetBit(int p, bool b, unsigned char * byte)// not working here cause only f
 		*byte &= ~(1UL << (7 - p));
 
 }
+
+void PrintRawBytes(unsigned char* ptr, int length) 
+{
+	std::cout << std::endl;
+	for (int i = 0; i < length; i++) {
+		std::cout << (int)ptr[i] << " ";
+	}
+	std::cout << std::endl;
+}
 bool IsBitSet(int p, unsigned char byte) 
 {
 	return (byte >> (7 - p)) & 1U;// not working here 

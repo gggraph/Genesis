@@ -26,3 +26,5 @@ bool FileExists(const char * fileName);
 void ReadFile(const char * fname, long position, int length, unsigned char *data);
 void OverWriteFile(const char * fname, long position, unsigned char *data, int length);
 void AppendFile(const char * fname, unsigned char *data, int length);
+
+void PrintRawBytes(unsigned char* ptr, int length);

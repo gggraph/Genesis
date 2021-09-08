@@ -1,4 +1,5 @@
-
+#include "NetServer.h"
+#include "NetClient.h"
 #include "Genesis.h"
 #include "sha256.h"
 #include "Mine.h"
@@ -6,6 +7,7 @@
 #include "vm.h"
 #include "arith256.h"
 #include "tx.h"
+
 
 /*
 TODO 
@@ -22,6 +24,10 @@ TODO
 
 int main(int argv, char** args)
 {
+	StartServer("net.ini");
+	ConnectToPeerList("net.ini");
+	getchar();
+	Demo();
 	/*
 	unsigned char ge_tar[] =
 	{
@@ -62,6 +68,52 @@ int main(int argv, char** args)
 	*/
 
 	// [0] init software
+	//Demo();
+	
+
+
+	/*
+	std::cout << "Building NewUploadDemand" << std::endl;
+	unsigned char data[241];
+	uint32_t ts = GetTimeStamp();
+	int rd = 0;
+	memcpy(data, &rd, 4);
+	memcpy(data+4, &ts, 4);
+	Sha256.init();
+	Sha256.write((char*)data, 8);
+	unsigned char hash[32];
+	memcpy(hash, Sha256.result(), 32);
+	memcpy(data + 2, hash, 32);
+	data[0] = 2; // flag byte of packet
+	data[1] = 1; // flag byte of data 
+	
+	
+	printHash(Sha256.result());
+	UintToBytes(200, data + 34);
+
+	getchar();
+	std::cout << "Sending ... " << std::endl;
+	getchar();
+	PeerSend(0, data, 38);
+	getchar();
+	PrintDLinformation(0);
+	
+	std::cout << "Testing send file  ... " << std::endl;
+	getchar();
+
+
+	data[0] = 3; // flag byte of packet
+	memcpy(data + 1, hash, 32);
+	UintToBytes(0, data + 33);
+	UintToBytes(200, data + 37);
+	PeerSend(0, data, 241);
+	*/
+	while (1) {}
+
+}
+
+void Demo() 
+{
 	InitChain();
 	VerifyFiles();
 	LoadBlockPointers();
@@ -97,28 +149,58 @@ int main(int argv, char** args)
 	std::cout << " sold : " << GetUtxoSold(utxobuff) << std::endl;
 	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
 
-	
-	// create a transaction
-	unsigned char prkey[32]; //  
-	ReadFile("prk", 0, 32, prkey); // fill pukey buffer gmme erroe here
-	CreateDefaultTransaction(prkey, utxop, GetUtxoTOU(utxobuff) + 1, 5000, 0, 10, utxop, NULL);
-	while (1) {}
-
-
-
-	// Mine 60 times with my pointer to get my reward
-	for (int i = 0; i < 60; i++) {
+	// Mine 10 times with my pointer to get my reward
+	for (int i = 0; i < 10; i++) {
 		Mine(pukey, 5000, utxop, wblockpath);
 		ProccessBlocksFile(wblockpath);
 	}
 
-	// print my super new updated sold ...
 	GetUtxo(utxop, utxobuff);
 	std::cout << " sold : " << GetUtxoSold(utxobuff) << std::endl;
 	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
 
-	
+	std::cout << "starting creating a transaction...";
+	getchar();
+	// create a transaction
+	unsigned char prkey[32]; //  
+	ReadFile("prk", 0, 32, prkey); // fill pukey buffer gmme erroe here
+	unsigned char rdpukey[64];
+	GetRandomValidPublicKey(rdpukey);
+	CreateDefaultTransaction(prkey, utxop, GetUtxoTOU(utxobuff) + 1, 5000, 50, 8, 0, rdpukey);
+	//CreateDefaultTransaction(prkey, utxop, GetUtxoTOU(utxobuff) + 1, 5000, 0, 1, utxop, NULL);
 
+	std::cout << "mine block with transaction...";
+	getchar();
+	Mine(pukey, 5000, utxop, wblockpath);
+	getchar();
+	ProccessBlocksFile(wblockpath);
+	getchar();
+
+	// recreating ptx
+	remove("ptx");
+	FILE* f = fopen("ptx", "wb");
+	if (f == NULL) return ;
+	fclose(f);
+	std::cout << "mine more blocks to make it official...";
+	getchar();
+
+	// continue mining block
+	for (int i = 0; i < 10; i++) {
+		Mine(pukey, 5000, utxop, wblockpath);
+		ProccessBlocksFile(wblockpath);
+	}
+
+	GetUtxo(utxop, utxobuff);
+	std::cout << "Sold : " << GetUtxoSold(utxobuff) << std::endl;
+	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
+
+	std::cout << "Wayback utxo from 10 blocks " << std::endl;
+	getchar();
+	uint32_t lastbi = GetLatestBlockIndex(true);
+	DowngradeUtxoAtSpecificBlockTime(utxobuff, lastbi - 10);
+	std::cout << "Sold : " << GetUtxoSold(utxobuff) << std::endl;
+	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
+	getchar();
 }
 
 

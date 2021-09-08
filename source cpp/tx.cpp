@@ -4,16 +4,50 @@
 
 /*
 [TX header] ( 85 bytes )
-PuKey Pointer   (4 bytes)
-PrKey Signature (64 bytes)
-TOU             (4 bytes)
-Purishment   	(4 byte )
-Fee             (4 byte ) (reward for miner)
-Byte ID         (1 byte )
+PuKey Pointer   (4 bytes) +0
+PrKey Signature (64 bytes) +4
+TOU             (4 bytes) +68
+Purishment   	(4 byte ) +72
+Fee             (4 byte ) (reward for miner) +76
+Byte ID         (1 byte ) + 77
 Data Size       (4 bytes)
+
 [TX data]
-Data            (Data Size)
+[depends]
 */
+void PrintTransaction(unsigned char* TX) {
+	unsigned char* txdata = GetTXData(TX);
+	std::cout << "-_-_-_-_-_-_-_-_-TX info_-_-_-_-_-_-_-" << std::endl;
+	std::cout << "UTXOP           : " << BytesToUint(TX) << std::endl;
+	printSignature(GetTXSignature(TX));
+	std::cout << "TOU             : " << GetTXTokenOfUniqueness(TX) << std::endl;
+	std::cout << "Purishment time : " << GetTXPurishmentDate(TX) << std::endl;
+	std::cout << "Fee			  : " << GetTXFee(TX) << std::endl;
+	std::cout << "Data Size		  : " << GetTXDataSize(TX) << std::endl;
+	switch (GetTXByteID(TX)) {
+	case 0 : 
+		std::cout << "IS DEFAULT TRANSACTION TYPE" << std::endl;
+		
+		std::cout << "INFOREC  		  : " << (int) txdata[0]  << std::endl;
+		std::cout << "Amount  		  : " << BytesToUint(txdata + 1) << std::endl;
+		break;
+	case 1: 
+		break;
+	case 2: break;
+
+	}
+	std::cout << "-_-_-_-_-_-_-_-_--_-_-_-_-_-_-_-_-_-" << std::endl;
+
+}
+void printSignature(unsigned char* buff)
+{
+	for (int i = 0; i < 64; i++) {
+		std::cout << ("0123456789abcdef"[buff[i] >> 4]);
+		std::cout << ("0123456789abcdef"[buff[i] & 0xf]);
+	}
+	std::cout << std::endl;
+
+}
 
 bool IsTransactionValid(unsigned char * TX, uint32_t blockindextime, int * gas, uint32_t blocindex, uint32_t txindex)
 {
@@ -63,6 +97,7 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime, int * gas)
 		receiver utxop or puKey (4o or 64 o ) 
 	
 	*/
+
 	//[0] Append/Get sUTXO and rUTXO 
 	unsigned char  sutxo[76];
 	unsigned char  rutxo[76];
@@ -76,23 +111,33 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime, int * gas)
 	}
 	else
 	{
+		// check if new receiver key is valid secp256k1 ... 
+		if (!uECC_valid_public_key(TXDATA + 5, uECC_secp256k1()))
+		{
+
+			std::cout << "[WRONG TX] Invalid Receiver Public Key for SECP256K1 standard." << std::endl;
+			return false;
+
+		}
 		unsigned char nutxo[72];
-		memcpy(nutxo, TXDATA + 5, 64);
-		memset(TXDATA + 69, 0, 8);
+		memcpy(nutxo, TXDATA + 5, 64); // set pukey for new utxo 
+		memset(nutxo + 64, 0, 8); // zeroing TOU & sold 
 		GetVirtualUtxo(0, blockindextime, rutxo, nutxo);
-		MIN_FEE += 50; // + penality for writing new account
+		MIN_FEE += 50;
 	}
 	
 	uint32_t txfee = GetTXFee(TX);
 	uint32_t totCost = BytesToUint(TXDATA + 1) + txfee;
 	
 	if (txfee < MIN_FEE) {
-		std::cout << "[BLOCK REFUSED] Insuffisant fee in a transaction";  return false;
+		std::cout << "[BLOCK REFUSED] Insuffisant fee in a transaction";  
+		return false;
 	}
 		
 
 	if (totCost > GetUtxoSold(sutxo)) {
-		std::cout << "[BLOCK REFUSED] Insuffisant sold in a transaction";  return false;
+		std::cout << "[BLOCK REFUSED] Insuffisant sold in a transaction : " << totCost << " but " << GetUtxoSold(sutxo); 
+		return false;
 	}
 
 	// update sender sold and tou. update receiver sold.
@@ -320,10 +365,21 @@ DFT Structure :
 		receiver utxop or puKey (4o or 64 o )
 */
 
-bool AddTransactionToPTXFile( unsigned char * TX ) 
+
+bool AddTransactionToPTXFile( unsigned char * TX, int TXSIZE ) 
 {
-	// Verify signature. Verify Data Size && add it ... 
-	return false;
+	// Verify signature. 
+	if (! isSignatureValid(TX)) {
+		return false;
+	}
+	//Verify Data Size
+
+	// append brutaly?
+	FILE* f = fopen("ptx", "ab");
+	if (f == NULL) return false;
+	rewind(f);
+	fwrite(TX, 1, TXSIZE, f);
+	fclose(f);
 }
 
 // this algo will sort every TRANSACTION IN PTX file BY THE FOLLOWING FORMAT : 
@@ -440,6 +496,14 @@ bool CreateDefaultTransaction(unsigned char * prKey, uint32_t utxop,  uint32_t n
 	
 	free(signed_data); // release heap alloc
 	return true;
+}
+
+void GetRandomValidPublicKey(unsigned char* buffer) 
+{
+	uint8_t pukey[64];
+	uint8_t prkey[32];
+	uECC_make_key(pukey, prkey, uECC_secp256k1());
+	memcpy(buffer, pukey, 64);
 }
 
 bool MakeSECP256K1PairKeys() {

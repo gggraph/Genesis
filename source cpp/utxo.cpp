@@ -1,5 +1,5 @@
 #include "utxo.h"
-
+#include "consensus.h"
 /*
 UTXO STRUCT  :  (72) or (76 virtual) / before it was 540 or 544
 PUKEY      64 B
@@ -229,7 +229,81 @@ void GetVirtualUtxo(uint32_t utxop, uint32_t blockindextime, unsigned char * rvU
 
 void DowngradeUtxoAtSpecificBlockTime(unsigned char * utxo , uint32_t index)
 {
+	uint32_t bi = GetLatestBlockIndex(true);
+	for (int i = bi - 1; i >= index; i--) {
+		unsigned char* currentb = GetOfficialBlock(i); 
+		uint16_t txn = GetTransactionNumber(currentb);
+		uint32_t totfee = GetMiningReward(i);
+		for (int n = txn - 1; n >= 0; n--) {
+			unsigned char* TX = GetBlockTransaction(currentb, n);
+			DownGradeUtxoFromSpecificTransaction(utxo, TX);
+			totfee += GetTXFee(TX);
+		}
+		// if utxo is miner of the block lower fee + mining reward ...
+		unsigned char  mutxo[72];
+		unsigned char tokenflag = GetMinerTokenFlag(currentb); 
+		if (tokenflag == 1) {
+			memcpy(mutxo, currentb + 109, 64);
+		}
+		else {
+			GetUtxo(BytesToUint(currentb + 109), mutxo);
+		}
+		if (memcmp(GetUtxoPuKey(utxo), mutxo, 64) == 0) {
+			uint32_t oldsold = GetUtxoSold(utxo);
+			oldsold -= totfee; // lower sold of miner
+			memcpy(mutxo + 68, &oldsold, 4);
+			std::cout << "lowering by  "<< totfee << std::endl;
+		}
+		free(currentb);
+	}
+}
 
+void DownGradeUtxoFromSpecificTransaction(unsigned char* utxo, unsigned char* TX) 
+{
+	// will depend either if it is a specific DFT, CST  or CRT for the sender
+	// process sender UTXO 
+	unsigned char keybuff[64];
+	unsigned char* TXDATA = GetTXData(TX);
+	uint32_t oldsold = GetUtxoSold(utxo);
+	GetTXsPuKey(keybuff, TX);
+	if (memcmp(GetUtxoPuKey(utxo), keybuff, 64) == 0) {
+		// first get back fee & tou
+		uint32_t oldtou = GetUtxoTOU(utxo);
+		oldtou--;
+		oldsold += GetTXFee(TX);  // get back fee
+		memcpy(utxo + 64, &oldtou, 4);
+		switch (GetTXByteID(TX)) {
+		case 0: 
+			// get back the amount
+			oldsold += BytesToUint(TXDATA + 1); // get back amount
+			std::cout << "adding by  " << BytesToUint(TXDATA + 1) << std::endl;
+			break;
+		}
+		// update sold 
+		memcpy(utxo + 68, &oldsold, 4);
+	}
+	// process receiver UTXO  
+	if (GetTXByteID(TX) == 0) {
+		
+		// update receiver sold if needed ( lower the amount ) 
+		if (TXDATA[0] == 0) { // receiver exist  
+			// seems kinda slow here ...
+			unsigned char  candidate[72]; 
+			GetUtxo(BytesToUint(TXDATA + 5), candidate);
+			if (memcmp(GetUtxoPuKey(utxo), GetUtxoPuKey(candidate), 32) == 0) {
+				oldsold -= BytesToUint(TXDATA + 1);
+				memcpy(utxo + 68, &oldsold, 4);
+			}
+		}
+		else {
+			if (memcmp(GetUtxoPuKey(utxo), TXDATA + 5, 32) == 0) {
+				oldsold -= BytesToUint(TXDATA + 1);
+				memcpy(utxo + 68, &oldsold, 4);
+			}
+		}
+		
+	}
+	
 }
 
 void UpdateUtxoSet() // JUST UPDATING VIRTUAL UTXO SET WITH utxo//tmp 

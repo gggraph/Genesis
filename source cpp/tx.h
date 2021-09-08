@@ -12,7 +12,14 @@ bool isSignatureValid(unsigned char* TX);
 void RefreshPTXFileFromVirtualUtxoSet();
 bool AddTransactionToPTXFile(unsigned char* TX, int TXSIZE);
 
+void PrintTransaction(unsigned char* TX);
+void printSignature(unsigned char* buff);
+
 bool MakeSECP256K1PairKeys();
 bool CreateDefaultTransaction(unsigned char* prKey, uint32_t utxop, uint32_t nTOU, uint32_t PurishmentTime, uint32_t fee,
 	uint32_t  amount, uint32_t rutxop, unsigned char* rpuKey);
+
+
+// misc
+void GetRandomValidPublicKey(unsigned char* buffer);
 

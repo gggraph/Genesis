@@ -3,8 +3,14 @@
 
 void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * fpathbuffer) // return the name of the mined block path
 {
-
-
+	/*
+	block stuct before mining [called ublock]
+	index(4)  - previous hash(32) - timestamp(4) - hashtarget(32) - minertoken(either 65 or 5) -     txn (2o)          - txs (...)
+	+0          +4                  +36            +40              +72							   +77 or +137       - +79 or +139 ...                      
+	block stuct after mining [called nblock]
+	index(4)  - hash (32 ) -  previous hash(32) - timestamp(4) - hashtarget(32) - nonce (4) -  minertoken(either 65 or 5) -     txn (2o)          - txs (...)
+	+0          +4            +36                 +68			+72				  +104		   +108                            +173 or +113			+175 or +115
+	*/
 	char bfpath[255];
 	GetLatestBlockFilePath(bfpath);
 	std::cout << " file path : " << bfpath << std::endl;
@@ -35,12 +41,13 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	uint32_t txsize = 0;
 	if (txs != NULL)
 	{
-		txn = BytesToUint(txs);
+		txn = BytesToShort(txs);
 		datasize = BytesToUint(txs+2);
 		txsize = datasize;
+
 	}
 	if (!utxop)
-		datasize += 175; // i dk really where is those 2 bytes flying 
+		datasize += 175; 
 	else
 		datasize += 115;  
 
@@ -49,10 +56,7 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	unsigned char * ublock = (unsigned char *)malloc(datasize-36); // unp block ( without hash & nonce )
 	unsigned char buff[32];
 
-	/*
-	Reminder : index (4o) . hash (32o) . phash (32o) . timestamp (4o) . hashtarget (32o) .  nonce (4 o) .  miner token [can be either 4+1 o or 64+1 o] .
-	. txn ( 2o ) . txs (variable)
-	*/
+	
 
 	// prepare block header to hash
 
@@ -80,13 +84,15 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	int boff;
 	if ( utxop != 0 )
 	{
-		memset(ublock + 72,0, 1);
+		ublock[72] = 0;
+		//memset(ublock + 72,0, 1);
 		memcpy(ublock + 73, &utxop, 4);
 		boff = 77;
 	}
 	else
 	{
-		memset(ublock + 72, 1, 1);
+		ublock[72] = 1;
+		//memset(ublock + 72, 1, 1);
 		memcpy(ublock + 73, puKey, 64); // puKey is 64b
 		boff = 137;
 	}
@@ -94,22 +100,26 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 	memcpy(ublock + boff, &txn, 2); // txn
 	if (txs != NULL)
 	{
-		memcpy(ublock + boff + 2, txs, txsize);
+		memcpy(ublock + boff + 2, txs+6, txsize); // dont copy the 6 bytes header 
+		
+		std::cout << "TX AT MINING CS A" << std::endl;
+		PrintTransaction(txs + 6);
 		free(txs);
 	}
 
+	
+
 
 	//SHA256
+	
 	Sha256.init();
 	Sha256.write((char *)ublock, datasize - 36);
 	memcpy(buff, Sha256.result(), 32);
 
-	
-
 	// _________________ MINING _________________
 	
 	uint32_t golden_nonce = 0;
-	memcpy(nblock + 4, buff, 32); // copy head
+	memcpy(nblock + 4, buff, 32); // copy header hash
 	std::cout << "start mining" << std::endl;
 	std::cout << "target required : " << std::endl;
 	for (int i = 0; i < 32; i++) {
@@ -129,13 +139,18 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 			break;
 		}
 	}
-	
+
 	// _________________ PROCCESS FILE _________________
 	memcpy(nblock, ublock, 4);
-	memcpy(nblock + 4, buff, 32);
+	memcpy(nblock + 4, buff, 32); 
 	memcpy(nblock + 36, ublock + 4, 68);
-	memcpy(nblock + 104, &golden_nonce, 4); // put nonce at 104 ptr
+	memcpy(nblock + 104, &golden_nonce, 4); 
+	std::cout << datasize << std::endl; 
 	memcpy(nblock + 108, ublock + 72, datasize - 108); 
+	PrintBlockInfo(nblock);
+	if (txn > 0) {
+		PrintRawBytes(nblock, datasize); // OK VALID BYTE ARRAY
+	}
 
 
 	char hashpath[255];
@@ -193,25 +208,29 @@ void Mine(unsigned char * puKey, uint32_t max_purishing, uint32_t utxop, char * 
 			fclose(f);
 			while (1) {}
 		}
-		
 		fclose(f);
-
+		
 	}
 	else
 	{
+		
 		std::cout << "new file " << std::endl;
 		UintToBytes(nIndex, buff);
 		UintToBytes(nIndex, buff + 4);
-		UintToBytes(12, buff + 8);
-		AppendFile(bname, buff, 12);
-		AppendFile(bname, nblock, datasize);
-
+		UintToBytes(12, buff + 8); 
+		FILE* f = fopen(bname, "ab");
+		if (f == NULL) { return; }
+		fwrite(buff, 1, 12, f);
+		fwrite(nblock, 1, datasize, f);
+		fclose(f);
+	
 	}
 	
 
 	free(lastblock);
 	free(nblock);
 	free(ublock);
+	
 	std::cout << "[CONGRATS] New block mined at " << bname << std::endl;
 	strcpy(fpathbuffer, bname);
 	
@@ -235,5 +254,24 @@ void IncrementUnofficialBlockFileHeader(uint32_t oBnum,  unsigned char * fdata )
 unsigned char * GetTransactionsForNewBlock() // need to be free cause malloc
 {
 	//just searching ptx with best size / fee ratio.will return a memblock whith 6 bytes header indicates txn and whole memblock size
-	return NULL;
+	
+	// [0] load ptx file in memory (use malloc)
+	FILE* f = fopen("ptx", "rb");
+	if (f == NULL) { std::cout << "error reading..." << std::endl; return NULL; }
+	fseek(f, 0, SEEK_END);
+	uint32_t fsize = ftell(f);
+	rewind(f);
+
+	if ( fsize < 1)
+		return NULL;
+	// std::cout << 
+	unsigned char* tmpdat = (unsigned char*)malloc(fsize + 6);
+	fread(tmpdat + 6, 1, fsize, f);
+	fclose(f);
+
+	uint16_t txn = 1;
+	memcpy(tmpdat, &txn, 2);
+	memcpy(tmpdat + 2, &fsize, 4);
+	return tmpdat;
+	
 }
