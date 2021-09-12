@@ -26,7 +26,7 @@
 
 Genesis Blockchain is a _proof-of-work blockchain_ for local network. 
 
-It can run_ smartcontracts_ through a virtual machine similar to x86 microprocessor ( instruction set is reduced for blockchain
+It can run _smartcontracts_ through a virtual machine similar to x86 microprocessor ( instruction set is reduced for blockchain
 purposes). 
 A custom assembler is provided, langage syntax is similar to NASM.
 
