@@ -62,4 +62,4 @@ A CRT ( Contract Request Transaction ) is a transaction that run a smartcontract
 
 To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (which can be downloaded at /src/build). It looks like this:  
 
-![alt text](https://raw.githubusercontent.com/gggraph/genesis/main/TRANSACTION%20VIEWER%20B.png?token=AO6VU22AXZLF4AVNTDRAQ3TBHZQ2G)
+![alt text](https://github.com/gggraph/genesis/blob/main/TRANSACTION%20VIEWER%20B.png)
