@@ -49,4 +49,8 @@ Once your executable is built. Place it in an empty folder, many files will be g
 Make sure _net.ini_ file is located at the root directory of the executable. It contains important information about
 all your peers IP and port. Genesis Blockchain only run on local environment even if its design was purposed
 to meet larger and public network. You can manually set IP:port for starting server and connecting to other
-machine by editing the file.  
+machine by editing the file. 
+
+## Write Smart Contract
+
+![alt text](https://raw.githubusercontent.com/gggraph/genesis/main/TRANSACTION%20VIEWER%20B.png?token=AO6VU22AXZLF4AVNTDRAQ3TBHZQ2G)
