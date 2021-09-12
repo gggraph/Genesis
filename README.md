@@ -18,5 +18,11 @@
           /\
           \/
 
-
+@settings {
+  font-size: 10;
+}
+Genesis
+@settings {
+  font-size: 100;
+}
 Genesis
