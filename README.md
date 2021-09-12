@@ -61,4 +61,5 @@ A CST has a generic header transaction data (public key pointer, secp256k1 signa
 A CRT ( Contract Request Transaction ) is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking a CRT is like calling a function in a piece of code somewhere in the blockchain.  
 
 To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (which can be downloaded at /src/build). It looks like this:  
+
 ![alt text](https://raw.githubusercontent.com/gggraph/genesis/main/TRANSACTION%20VIEWER%20B.png?token=AO6VU22AXZLF4AVNTDRAQ3TBHZQ2G)
