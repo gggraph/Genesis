@@ -8,6 +8,17 @@ SOLD       4  B
 VPTR       4  B ( only on virtual UTXO ) 
 */
 
+void PrintUTXO(unsigned char* UTXO) 
+{
+	std::cout << "-_-_-_-_-_-_-_-_-UTXO info_-_-_-_-_-_-_-" << std::endl;
+	std::cout << "SECP256K1 public key           : ";
+	printSignature(GetUtxoPuKey(UTXO));
+	std::cout << "Consummed Token of Uniqueness  : " << GetUtxoTOU(UTXO) << std::endl;
+	std::cout << "Sold							 : " << GetUtxoSold(UTXO) << std::endl;
+	std::cout << "-_-_-_-_-_-_-_-_--_-_-_-_-_-_-_-_-_-" << std::endl;
+
+}
+
 unsigned char * GetUtxoPuKey(unsigned char * utxo) // return ptr (0) not used ? 64 bytes
 {
 	return utxo;

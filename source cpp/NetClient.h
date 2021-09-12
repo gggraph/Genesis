@@ -15,11 +15,12 @@ void ConnectToPeerList(const char* filePath);
 void ConnectToPeer(std::string ServerIP, int port);
 int GetFreePeerPointer();
 void DisconnectPeer(int peerIndex);
+void DisconnectAll();
 
 void SendToAllPeers(unsigned char* data, int datalength);
 void PeerSend(int peerIndex, unsigned char* data, int datalength);
 
-
+void BroadcastRawFile(const char* filePath, unsigned char _flag);
 
 /*
 int Connect(std::string ServerIP, int port);

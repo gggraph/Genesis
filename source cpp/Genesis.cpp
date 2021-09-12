@@ -7,27 +7,78 @@
 #include "vm.h"
 #include "arith256.h"
 #include "tx.h"
-
+#include "NetfileManager.h"
+#include "UI.h";
 
 /*
 TODO 
-	* THINK OF PTX FILE DATA STRUCTURE 
-	* CREATE PTX ADDING FUNCTION TO PTX FILE
-	* CREATE PTXFILLING DURING MINING PROCCESS. 
-	* JUST TEST IT
 	* 
-	* APPLY NETWORKING
-	* APPLY SOME SMARTCONTRACT STUFF TO TEST IT
 	* APPLY COMMAND LINE
 	* DONE. REVIEW COMMENT AND CODE
 */
 
+unsigned char GENESIS_TARGET[32] =
+{
+	0x2F,0x95,0x5C,0x98,0x3D,0x33,0x7E,0xE6,
+	0x97,0xFD,0xD,0x65,0xE7,0x37,0xC,0x62,
+	0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
+	0xAC,0x75,0x65,0xBD,0x93,0x5,0xA,0x0
+};
 int main(int argv, char** args)
 {
+	SayHello();
+	PrintCommandList();
+	//GetCommand();
+	std::thread cmdthd(GetCommand);
+	//cmdthd.join(); is wait to finish cmd thread
+	while (1) {}
+
+}
+
+bool GenesisLoop() 
+{
+	// verify files sanity
+	InitChain();
+	VerifyFiles();
+	LoadBlockPointers();
+	// get pukey for mining process. 
+
+	return false;
+}
+	/*
 	StartServer("net.ini");
 	ConnectToPeerList("net.ini");
+
+	std::cout << "Mine one block" << std::endl;
 	getchar();
-	Demo();
+	
+	InitChain();
+	VerifyFiles();
+	LoadBlockPointers();
+
+	// [0b] creating pairkeys if not existing
+	MakeSECP256K1PairKeys();
+
+	// [1] print genesis
+	unsigned char* gb = GetOfficialBlock(0);
+	PrintBlockInfo(gb);
+	free(gb);
+
+
+	// [2] start mining from public Key 
+	unsigned char pukey[64]; //  pukey
+	ReadFile("puk", 0, 64, pukey); // fill pukey buffer 
+
+	char wblockpath[255];
+	Mine(pukey, 5000, 0, wblockpath);
+
+	std::cout << "send file ...";
+	BroadcastRawFile(wblockpath, 1);
+	std::cout << "process q file ...";
+	getchar();
+	ProccessNextQFile();
+	// send the file to server 
+	*/
 	/*
 	unsigned char ge_tar[] =
 	{
@@ -108,25 +159,43 @@ int main(int argv, char** args)
 	UintToBytes(200, data + 37);
 	PeerSend(0, data, 241);
 	*/
-	while (1) {}
 
-}
 
 void Demo() 
 {
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 01] Initialize blockchain files" << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
+	getchar();
 	InitChain();
 	VerifyFiles();
 	LoadBlockPointers();
-
+	
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 02] Create new pair keys for ECDSA" << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
+	getchar();
 	// [0b] creating pairkeys if not existing
 	MakeSECP256K1PairKeys();
 
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [INFO	  ] Here is the genesis block" << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
+	getchar();
 	// [1] print genesis
 	unsigned char* gb = GetOfficialBlock(0);
 	PrintBlockInfo(gb);
 	free(gb);
 
-
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 03] Mine seven blocks." << std::endl;
+	std::cout << "         Wait for blocks validations and upgrade of the official chain." << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
+	getchar();
 	// [2] start mining from public Key 
 	unsigned char pukey[64]; //  pukey
 	ReadFile("puk", 0, 64, pukey); // fill pukey buffer 
@@ -141,26 +210,42 @@ void Demo()
 		Mine(pukey, 5000, 0, wblockpath);
 		ProccessBlocksFile(wblockpath);
 	}
+
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 04] Get Wallet identifier and print his data. " << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
+	getchar();
+
 	// Get My Utxo Pointer
 	uint32_t utxop = GetUtxoPointer(pukey);
-	std::cout << " Pointer found at : " << utxop << std::endl;
+	std::cout << " Your wallet identifier : " << utxop << std::endl;
 	unsigned char utxobuff[72];
 	GetUtxo(utxop, utxobuff);
-	std::cout << " sold : " << GetUtxoSold(utxobuff) << std::endl;
-	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
+	PrintUTXO(utxobuff);
+
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 05] Mine 10 more blocks. See your new sold " << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
+	getchar();
 
 	// Mine 10 times with my pointer to get my reward
 	for (int i = 0; i < 10; i++) {
 		Mine(pukey, 5000, utxop, wblockpath);
 		ProccessBlocksFile(wblockpath);
 	}
-
-	GetUtxo(utxop, utxobuff);
-	std::cout << " sold : " << GetUtxoSold(utxobuff) << std::endl;
-	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
-
-	std::cout << "starting creating a transaction...";
 	getchar();
+	GetUtxo(utxop, utxobuff);
+	PrintUTXO(utxobuff);
+	getchar();
+
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 06] Donate 8 coins to random key. " << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
+	getchar();
+
 	// create a transaction
 	unsigned char prkey[32]; //  
 	ReadFile("prk", 0, 32, prkey); // fill pukey buffer gmme erroe here
@@ -169,19 +254,23 @@ void Demo()
 	CreateDefaultTransaction(prkey, utxop, GetUtxoTOU(utxobuff) + 1, 5000, 50, 8, 0, rdpukey);
 	//CreateDefaultTransaction(prkey, utxop, GetUtxoTOU(utxobuff) + 1, 5000, 0, 1, utxop, NULL);
 
-	std::cout << "mine block with transaction...";
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 07] Mine the block containing the transaction. " << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
 	getchar();
 	Mine(pukey, 5000, utxop, wblockpath);
-	getchar();
 	ProccessBlocksFile(wblockpath);
-	getchar();
 
 	// recreating ptx
 	remove("ptx");
 	FILE* f = fopen("ptx", "wb");
 	if (f == NULL) return ;
 	fclose(f);
-	std::cout << "mine more blocks to make it official...";
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 08] Mine more blocks to win the rule distance " << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
 	getchar();
 
 	// continue mining block
@@ -189,17 +278,27 @@ void Demo()
 		Mine(pukey, 5000, utxop, wblockpath);
 		ProccessBlocksFile(wblockpath);
 	}
-
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 09] Here is your new sold " << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
+	getchar();
 	GetUtxo(utxop, utxobuff);
-	std::cout << "Sold : " << GetUtxoSold(utxobuff) << std::endl;
-	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
+	PrintUTXO(utxobuff);
 
-	std::cout << "Wayback utxo from 10 blocks " << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [STEP 10] Travel in the past" << std::endl;
+	std::cout << "        See your sold 10 blocks earlier. " << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
 	getchar();
 	uint32_t lastbi = GetLatestBlockIndex(true);
 	DowngradeUtxoAtSpecificBlockTime(utxobuff, lastbi - 10);
-	std::cout << "Sold : " << GetUtxoSold(utxobuff) << std::endl;
-	std::cout << "latest index " << GetLatestBlockIndex(true) << std::endl;
+	PrintUTXO(utxobuff);
+	std::cout << "___________________________________________________________" << std::endl;
+	std::cout << std::endl;
+	std::cout << "        [DEMO IS FINISHED] " << std::endl;
+	std::cout << "___________________________________________________________" << std::endl;
 	getchar();
 }
 
@@ -249,6 +348,7 @@ void InitChain () // delete all files.
 	DeleteDirectory("tmp");
 	DeleteDirectory("fork");
 	remove("ptx");
+	std::cout << "All files have been deleted." << std::endl;
 }
 void CreateGenesisBlock() 
 {
@@ -285,7 +385,7 @@ void CreateGenesisBlock()
 	_wmkdir(L"sc");
 	_wmkdir(L"sc\\tmp");
 	_wmkdir(L"tmp");
-	std::cout << "genesis created.";
+	std::cout << "Genesis block created." << std::endl;
 
 }
 

@@ -14,8 +14,8 @@ void PrintBlockInfo(unsigned char * b )
 	std::cout << "-_-_-_-_-_-_-_-_-_block info_-_-_-_-_-_-_-"  << std::endl;
 	uint32_t val = GetBlockIndex(b);
 	std::cout << "index :" << val << std::endl;
-	printHash(GetBlockHash(b));
-	printHash(GetBlockPreviousHash(b));
+	std::cout << "hash          :";  printHash(GetBlockHash(b));
+	std::cout << "previous hash :";  printHash(GetBlockPreviousHash(b));
 	val = GetBlockTimeStamp(b);
 	std::cout << "ts :" << val << std::endl;
 	std::cout << "ht :";

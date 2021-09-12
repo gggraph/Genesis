@@ -28,6 +28,9 @@ bool AddQFile(unsigned char * id, unsigned char flag)
 bool ProccessNextQFile() 
 {
 	// process last
+	if (!currentQPtr)
+		return false;
+
 	unsigned char qid[32];
 	unsigned char qflag = QPTRS[currentQPtr - 1]->flag;
 	memcpy(qid, QPTRS[currentQPtr - 1]->id, 32); 

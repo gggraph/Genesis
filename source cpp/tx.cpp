@@ -366,21 +366,6 @@ DFT Structure :
 */
 
 
-bool AddTransactionToPTXFile( unsigned char * TX, int TXSIZE ) 
-{
-	// Verify signature. 
-	if (! isSignatureValid(TX)) {
-		return false;
-	}
-	//Verify Data Size
-
-	// append brutaly?
-	FILE* f = fopen("ptx", "ab");
-	if (f == NULL) return false;
-	rewind(f);
-	fwrite(TX, 1, TXSIZE, f);
-	fclose(f);
-}
 
 // this algo will sort every TRANSACTION IN PTX file BY THE FOLLOWING FORMAT : 
 /*
@@ -388,11 +373,77 @@ bool AddTransactionToPTXFile( unsigned char * TX, int TXSIZE )
 	[ SORT BY PUKEY ID                 ]
 	[ >SORT BY TOU                     ]
 	[ >>COMPUTE ACTUALLY UTXO FROM SOLD]
+
+	HOW TO ?
+	SORT TX BY PUKEY ID IN A SPLIT FILE CONTAINING IN FIRST 4 BYTES THE TOTAL AMOUNT OF FEES.
+	VERIFY EACH TX SPLIT FILES. (CREATING A CUSTOM UTXO INSTANCE)
+	ADD THEM BY TOTAL FEE ORDER
 	
 */
 
+// UNUSED
+void RecraftPTX(uint32_t _purishOffset) {
 
-// Long proccess that verify each 
+	// [0] load ptx file in memory (use malloc)
+	FILE* f = fopen("ptx", "rb");
+	if (f == NULL) { std::cout << "error reading..." << std::endl; return; }
+	fseek(f, 0, SEEK_END);
+	uint32_t fsize = ftell(f);
+	rewind(f);
+
+	// [1] Create a copy.
+	unsigned char* tmpdat = (unsigned char*)malloc(fsize);
+	fread(tmpdat, 1, fsize, f);
+	fclose(f);
+
+	uint32_t boff = 0;
+	unsigned char utxobuffer[72];
+	while (boff < fsize) {
+		// sorting them by TOU
+		if (GetTimeStamp() + _purishOffset < GetTXPurishmentDate(tmpdat + boff)) 
+		{
+			// now resolve the puzzle. TX has to be in ascending order.
+			// so get all ID sorting by ptr in file ... if new id create new id entry .  
+		}
+		boff += GetTXDataSize(tmpdat + boff) + 85;
+		// /!\ every signature has been already verified. 
+
+		/*
+		bool _isValid = true;
+
+		// [ 0 ]  verify purishment time 
+		if (GetTimeStamp() + _purishOffset < GetTXPurishmentDate(tmpdat + boff))
+			_isValid = false;
+		// [ 1 ] verify TOU based on official blockchain only. We will need to write a TOKENPUZZLESOLVERFUNCTION if needed 
+		GetUtxo(BytesToUint(tmpdat + boff), utxobuffer);
+		if (GetUtxoTOU(utxobuffer) != GetTXTokenOfUniqueness(tmpdat + boff) - 1)
+			_isValid = false;
+		*/
+	}
+}
+
+bool AddTransactionToPTXFile(unsigned char* TX, int TXSIZE)
+{
+	// Verify signature. 
+	if (!isSignatureValid(TX)) {
+		return false;
+	}
+	//Verify Data Size
+	if (TXSIZE != GetTXDataSize(TX) + 85) {
+		return false;
+	}
+	// append brutaly?
+	FILE* f = fopen("ptx", "ab");
+	if (f == NULL) return false;
+	rewind(f);
+	fwrite(TX, 1, TXSIZE, f);
+	fclose(f);
+
+
+}
+
+// Long proccess that verify each tx.
+// UNUSED
 void RefreshPendingTransactionFile(int _purishOffset = 0) {
 
 	// verify each header TOU, Purishment,  ... etc.
@@ -480,7 +531,9 @@ bool CreateDefaultTransaction(unsigned char * prKey, uint32_t utxop,  uint32_t n
 	if (!isSignatureValid(signed_data))
 		return false;
 
-	AddTransactionToPTXFile(signed_data, msg_size + 64);
+	if (AddTransactionToPTXFile(signed_data, msg_size + 64)) {
+		std::cout << "New transaction has been created. " << std::endl;
+	}
 	
 
 	return true;

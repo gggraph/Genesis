@@ -3,6 +3,7 @@
 #include "Bloc.h"
 #include <sstream>
 
+void PrintUTXO(unsigned char* UTXO);
 
 uint32_t GetUtxoPointer(unsigned char * puKey);
 void GetUtxo(uint32_t index, unsigned char *  buff);

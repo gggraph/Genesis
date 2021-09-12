@@ -6,6 +6,7 @@ LIRE DES BLOCS. ( TXS, ETC. ) LIRE DES UTXOS (ETC.)
 */
 
 #include "vm.h"
+#include "tx.h"
 
 #define MEM_SIZE 32000 
 
@@ -207,9 +208,9 @@ bool LoadContract( uint32_t bIndex, uint32_t TxIndex, bool _newcontract)
 	if (entriesnum == 0)
 		return false; //NO ENTRY IS NOT ALLOWED?
 
-	unsigned char * tdata = (unsigned char *)malloc(lSize - (entriesnum * 4) - 4);
-	memcpy(tdata, fdata + (entriesnum * 4) + 4, lSize - (entriesnum * 4) - 4);
-	InitVM(tdata, lSize - (entriesnum * 4) - 4);
+	unsigned char * tdata = (unsigned char *)malloc(lSize  - 4);
+	memcpy(tdata, fdata + (entriesnum * 4) + 4, lSize - 4);
+	InitVM(tdata, lSize  - 4, (entriesnum*4) + 0x5D);
 	free(tdata);
 	free(fdata);
 
@@ -222,11 +223,11 @@ bool LoadContract( uint32_t bIndex, uint32_t TxIndex, bool _newcontract)
 bool InitVM(unsigned char * cs, uint32_t length, uint32_t startaddress)
 {
 	// Init VM with CS Code
-	// EIP (0X2) is initialize at 0x5d
+	// EIP (0X20) is initialize at 0x5d by default
 	UintToBytes(startaddress, MEM + 0x20);
 	// ESP is initialize at MEM + MEM_SIZE
 	UintToBytes(MEM_SIZE - 1, MEM + 0x10);
-	// Copying code seems not working ...
+	// Copying code 
 	memcpy(MEM + 0x5D, cs, length);
 	return true;
 }
@@ -241,6 +242,7 @@ bool RunVMAtPtr(uint32_t memaddr, int gas, int _guserlimit)
 
 bool PushArgument(uint32_t arg)
 {
+	std::cout << "pushing " << arg;
 	unsigned char * t = MEM + 0x10;
 	int * spaddr = (int*)t;
 	*spaddr -= 4;
@@ -248,7 +250,63 @@ bool PushArgument(uint32_t arg)
 	return true;
 }
 
-int RunVM(int gas, int _guserlimit) // return gas used.
+int TestContract(unsigned char * tContract, uint32_t cSize, unsigned char * tRequest, uint32_t rSize)
+{
+	// Load and test contract . tContract is a CST transaction. tRequest is a CRT transaction.
+	
+	unsigned char* fdata = (unsigned char*)malloc(cSize);
+	memcpy(fdata, tContract + 85, cSize - 85);
+	// get number of entries 
+	/**/
+	uint32_t entriesnum = BytesToUint(fdata);
+	if (entriesnum == 0)
+		return 0; //NO ENTRY IS NOT ALLOWED
+
+	unsigned char* tdata = (unsigned char*)malloc(cSize); // copy cs without entries number
+	memcpy(tdata, fdata, cSize);
+	InitVM(tdata, cSize);
+
+	std::cout << "[VM] Contract successfully loaded." << std::endl;
+	free(tdata);
+	free(fdata);
+
+	// [0] 
+	/*
+	Smart Contract pointer    (8 bytes)
+		[*] Push  Operations  (4 bytes) -> repeated a specific amount of time determined by validator with data size
+	Smart Contract Entry Jump (4 bytes)
+	User Gas Limit            (4 bytes)
+	*/
+
+	PrintReg();
+	// request is a transaction file. 
+	fdata = (unsigned char*)malloc(rSize);
+	memcpy(fdata, tRequest, rSize);
+	uint32_t txSize = GetTXDataSize(fdata);
+	uint32_t pushNumber = (txSize - 16) / 4;
+	std::cout << "push count : " << pushNumber << std::endl;
+	for (int i = 0; i < pushNumber; i++) {
+		PushArgument(BytesToUint(fdata + 93 + (i * 4)));
+	}
+	// set eip at entry point
+	entriesnum = BytesToUint(MEM+0x5d);
+	uint32_t entrynumber = BytesToUint(fdata + 93 + (pushNumber * 4));
+	std::cout << "[VM] Entry jump is " << entrynumber << std::endl;
+	// retrieving startaddress is OK.
+	uint32_t startadress = BytesToUint(MEM + 0x5D + 4 + (entrynumber * 4)); 
+	std::cout << "[VM] Start address  is " << startadress << std::endl;
+
+	// update EIP register
+	UintToBytes( startadress, MEM + 0x20); 
+	// RUN
+	int gused = RunVM(0, MAX_GAS_SIZE, true);
+
+	PrintReg();
+	return gused;
+}
+
+
+int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 {
 
 	/*
@@ -513,7 +571,7 @@ int RunVM(int gas, int _guserlimit) // return gas used.
 
 		if (gas >= MAX_GAS_SIZE || gas-i_gas >= _guserlimit) {
 			return 0;
-		}
+		}unsigned char nf = 0;
 		// break if gas is above max
 		switch (OPID)
 		{
@@ -531,7 +589,7 @@ int RunVM(int gas, int _guserlimit) // return gas used.
 			break;
 			case 2: // CMP ( it is a substraction and do some stuff ) 
 				// WARNING WE JUST USE 
-				unsigned char nf;
+				
 				int res;
 				if (s)
 					res = (uint32_t)*(caddr2)-(uint32_t)*(caddr1);
@@ -790,6 +848,9 @@ int RunVM(int gas, int _guserlimit) // return gas used.
 				fclose(f);
 				break;
 			case 41: // STF -> Store Contract storage. EAX: FILE PTR | ECX: Number Of Bytes | EDX: RAM PTR
+			std::cout << "Write storage at offset " << BytesToUint(MEM + 0x08) << ", " 
+				<< BytesToUint(MEM + 0x08) << " bytes from virtual memory " << BytesToUint(MEM + 0x0C)
+				<< std::endl;
 				f = fopen(storagefPath, "r+b");
 				if (f == NULL) return 0;
 				fseek(f, BytesToUint(MEM), SEEK_SET);
@@ -797,7 +858,6 @@ int RunVM(int gas, int _guserlimit) // return gas used.
 				fclose(f);
 				break;
 		}
-
 		ctrt++;
 		
 			

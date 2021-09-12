@@ -150,7 +150,6 @@ void OnServerReceive(TCPServer* listen_server, SOCKET client, unsigned char* dat
 			AddQFile(DLPTRS[dpptr]->id, DLPTRS[dpptr]->flag);
 			// [2] Delete DL
 			StopDL(dpptr);
-			while ( 1){}
 		}
 		
 		
