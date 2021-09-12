@@ -1,4 +1,4 @@
-# genesis
+
 
           _
         ,/_\,
@@ -20,4 +20,4 @@
 
 
 
-<font size="10"> your text </font>
+# The genesis blockchain
