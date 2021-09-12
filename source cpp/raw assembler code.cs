@@ -1,11 +1,7 @@
--____________________________-__________________________________________-____________________________________________-___________________________________________________
--____________________________-__________________________________________-____________________________________________-___________________________________________________
--____________________________-__________________________________________-____________________________________________-___________________________________________________
-                                                                THIS IS RAW. WAS NOT OPTIMIZED. THIS IS X86 ASSEMBLER FOR .NET FRAMEWORK WINFORMS
--____________________________-__________________________________________-____________________________________________-___________________________________________________
--____________________________-__________________________________________-____________________________________________-___________________________________________________
--____________________________-__________________________________________-____________________________________________-___________________________________________________
--____________________________-__________________________________________-____________________________________________-___________________________________________________
+
+/*
+                     ___________________________________ RAW ASSEMBLER IMPLEMENTATION FOR .NET WINDOWS FORMS ___________________________________ 
+*/
 
 using System;
 using System.Collections.Generic;
@@ -31,7 +27,7 @@ namespace GenesisExplorer
         public static byte[] BIN;
         public static int bOffset;
 
-        public static void GenerateOPCODEMapping() // garbagge but ok 
+        public static void GenerateOPCODEMapping() 
         {
            
             for (int i = 0; i < 256; i++)
@@ -39,7 +35,7 @@ namespace GenesisExplorer
                 map[i] = 255; // the HLT OPCODE
                 numap[i] = 0;
             }
-            string fpath = @"C:\Users\Gaël\source\repos\GenesisExplorer\GenesisExplorer\vmopcode1.txt";
+            string fpath = "vmopcode1.ini";
             string [] fs = File.ReadAllLines(fpath);
             uint opcnt = 0;
             uint tot = 0;
@@ -50,7 +46,7 @@ namespace GenesisExplorer
                 {
                     tot++;
                     int bitnum = int.Parse(fparse[1]);
-
+                    int gas = int.Parse(fparse[2]);
                     if (bitnum == 3)
                     {
                         byte opc, opb;
@@ -69,6 +65,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -90,6 +87,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -111,6 +109,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -132,6 +131,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -153,6 +153,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -174,6 +175,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -195,6 +197,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -216,6 +219,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -243,6 +247,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -263,6 +268,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -283,6 +289,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -303,6 +310,7 @@ namespace GenesisExplorer
                             {
                                 map[opb] = (byte)opcnt;
                                 numap[opb] = (byte)bitnum;
+                                gazmap[opb] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -320,6 +328,7 @@ namespace GenesisExplorer
                             {
                                 map[i] =   (byte)opcnt;
                                 numap[i] = 0; // <--- 0 nu map not workin
+                                gazmap[i] = (byte)gas;
                                 _f = true;
                                 break;
                             }
@@ -340,19 +349,30 @@ namespace GenesisExplorer
                 }
 
             }
+           
+        }
+
+        public static void PrintOPMaps()
+        {
             string mapstr = "";
-            foreach ( byte b in map)
+            foreach (byte b in map)
             {
                 mapstr += b.ToString() + ", ";
             }
-            MessageBox.Show( tot.ToString() + "MNEMONIC OPCODE: \r\n" +  mapstr);
+            MessageBox.Show( "OPCODE MAP: \r\n" + mapstr);
 
             mapstr = "";
             foreach (byte b in numap)
             {
                 mapstr += b.ToString() + ", ";
             }
-            MessageBox.Show(tot.ToString() + "MNEMONIC OPNUM  : \r\n" + mapstr);
+            MessageBox.Show("OPERAND SIZE MAP: \r\n" + mapstr);
+            mapstr = "";
+            foreach (byte b in gazmap)
+            {
+                mapstr += b.ToString() + ", ";
+            }
+            MessageBox.Show("GAS PRICE MAP: \r\n" + mapstr);
         }
 
         public class Label
@@ -392,6 +412,90 @@ namespace GenesisExplorer
         public static List<int> Entries = new List<int>();
 
 
+        public static void CreateCRT(string[] txt)
+        {
+            int blocindex = -1;
+            int txindex = -1;
+            int entryindex = -1;
+            List<uint> pushOps = new List<uint>();
+
+            foreach ( string s in txt)
+            {
+                if (s.Contains("###"))
+                {
+                    int.TryParse(s.Replace("###", "").Replace(" ", ""), out blocindex);
+                }
+                else if (s.Contains("##"))
+                {
+                    int.TryParse(s.Replace("##", "").Replace(" ", ""), out txindex);
+                }
+                else if (s.Contains("#"))
+                {
+                    int.TryParse(s.Replace("#", "").Replace(" ", ""), out entryindex);
+                }
+                else
+                {
+                    uint n = 0;
+                    if ( uint.TryParse(s.Replace(" ", ""), out n) )
+                    {
+                        pushOps.Add(n);
+                    }
+                }
+            }
+            if ( blocindex == -1)
+            {
+                MessageBox.Show("Bloc index was not declared. Use ### to declare it.");
+                return;
+            }
+            if (txindex == -1)
+            {
+                MessageBox.Show("Transaction index was not declared. Use ## to declare it.");
+                return;
+            }
+            if (entryindex == -1)
+            {
+                MessageBox.Show("Entry index was not declared. Use # to declare it.");
+                return;
+            }
+            //WE NEED TO SIGN now ... 
+            MessageBox.Show("[WARNING] This will create a CRT file with blank header. Cannot be mined. Only for testing purpose.");
+            List<byte> data = new List<byte>();
+            
+            // fill blank header
+            for (int  i = 0; i < 81; i ++) // last four bytes are uint of txdata size
+            {
+                data.Add(0);
+            }
+            uint datasize = 16 + (4 * (uint)pushOps.Count);
+            AddBytesToList(ref data, BitConverter.GetBytes(datasize));
+
+            AddBytesToList(ref data, BitConverter.GetBytes(blocindex));
+            AddBytesToList(ref data, BitConverter.GetBytes(txindex));
+            for (int i = 0; i < pushOps.Count; i++)
+            {
+                AddBytesToList(ref data, BitConverter.GetBytes(pushOps[i]));
+            }
+            AddBytesToList(ref data, BitConverter.GetBytes(entryindex));
+            AddBytesToList(ref data, BitConverter.GetBytes(uint.MaxValue));
+
+
+            Stream myStream;
+            SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+
+            saveFileDialog1.Filter = "All files (*.*)|*.*";
+            saveFileDialog1.FilterIndex = 2;
+            saveFileDialog1.RestoreDirectory = true;
+
+            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                if ((myStream = saveFileDialog1.OpenFile()) != null)
+                {
+
+                    myStream.Write(ListToByteArray(data), 0, data.Count);
+                    myStream.Close();
+                }
+            }
+        }
         public static void ShowMnemoOpcodes(string t)
         {
             int idx = -1;
@@ -423,17 +527,20 @@ namespace GenesisExplorer
             logD = new List<string>();
             Entries = new List<int>();
 
+            
+            
             // [0] PRE PROCESS LABELS
             foreach (string s in txt)
             {
                 PreProcessLabel(s);
             }
+            int entrycount = GetEntryCount(txt);
             // [1] CONVERT
 
             List<byte> binlst = new List<byte>();
             foreach (string s in txt)
             {
-                byte[] B = ConvertLineToBinary(s);
+                byte[] B = ConvertLineToBinary(s, entrycount);
                 if (B != null)
                 {
                     bOffset += B.Length;
@@ -453,19 +560,25 @@ namespace GenesisExplorer
                 dumpstr += "(" + GetByteString(b) + ")";
 
             }
-            /*
-            List<byte> entryb = new List<byte>();
-            AddBytesToList(ref entryb, BitConverter.GetBytes((uint)Entries.Count));
-            foreach ( int i in Entries)
-            {
-                AddBytesToList(ref entryb, BitConverter.GetBytes((uint)i));
-            }
-
-            binlst = entryb.Concat(binlst).ToList();*/
             BIN = ListToByteArray(binlst);
             // [3] POST PROCESS LABEL
-
             PostProcessLabel();
+            // [4] CONCAT WITH ENTRIES
+            
+            List<byte> flist = new List<byte>();
+            AddBytesToList(ref flist, BitConverter.GetBytes((uint)Entries.Count));
+            foreach ( int i in Entries)
+            {
+                AddBytesToList(ref flist, BitConverter.GetBytes((uint)i));
+            }
+            foreach ( byte b in BIN)
+            {
+                flist.Add(b);
+            }
+            BIN = ListToByteArray(flist);
+           
+
+          
 
             // [opt.] Print Memory Dump
 
@@ -474,8 +587,16 @@ namespace GenesisExplorer
 
             if ( _save)
             {
+                MessageBox.Show("[WARNING] This will create a CST file with blank header. Cannot be mined. Only for testing purpose.");
                 Stream myStream;
                 SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+
+                List<byte> outb = new List<byte>();
+                for (int i = 0; i < 85; i ++)
+                {
+                    outb.Add( 0 ) ;
+                }
+                AddBytesToList(ref outb, BIN);
 
                 saveFileDialog1.Filter = "All files (*.*)|*.*";
                 saveFileDialog1.FilterIndex = 2;
@@ -486,14 +607,41 @@ namespace GenesisExplorer
                     if ((myStream = saveFileDialog1.OpenFile()) != null)
                     {
                         
-                        myStream.Write(BIN, 0, BIN.Length);
+                        myStream.Write(ListToByteArray(outb), 0, outb.Count);
                         myStream.Close();
                     }
                 }
             }
             // [2] this was just it.
         }
-        
+
+        public static int GetEntryCount(string[] text)
+        {
+            int result = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                string s = text[i];
+                s = s.Replace("\r\n", "");
+                s = s.Replace("\r", "");
+
+                int eindex = s.IndexOf("#");
+                if (eindex > -1)
+                {
+                    string entry = s.Substring(eindex + 1, s.Length - (eindex + 1));
+                    entry = entry.Replace(" ", "");
+                    foreach (Label l in labels)
+                    {
+                        if (l.name == entry)
+                        {
+                            result++;
+                            break;
+                        }
+                    }
+
+                }
+            }
+            return result;
+        }
         public static int DetectFormat(string operand)
         {
           
@@ -504,7 +652,7 @@ namespace GenesisExplorer
                 // does it direct value 
                 if (int.TryParse(operand, out val))
                 {
-                    logR.Add("Immediate addressing");
+                    logR.Add("Immediate addressing"); // OK BUT IT IS 4 BYTES OR ONE ???
                     return 0;
                 }
                 
@@ -553,7 +701,7 @@ namespace GenesisExplorer
                                 }
                                 else
                                 {
-                                    logR.Add("Indirect + DISP8 addressing");
+                                    logR.Add("Indirect + DISP8 addressing" );
                                     return 5;
                                 }
 
@@ -595,7 +743,7 @@ namespace GenesisExplorer
                                     }
                                     else
                                     {
-                                        logR.Add("Indirect + DISP8 addressing");
+                                        logR.Add("Indirect + DISP8 addressing" );
                                         return 8 ;
                                     }
 
@@ -609,7 +757,7 @@ namespace GenesisExplorer
                                     }
                                     else
                                     {
-                                        logR.Add("Indirect + DISP8 addressing");
+                                        logR.Add("Indirect + DISP8 addressing" );
                                         return 10 ;
                                     }
 
@@ -739,12 +887,16 @@ namespace GenesisExplorer
               
             }
         }
-        public static byte[] ConvertLineToBinary(string s)
+        public static byte[] ConvertLineToBinary(string s, int entrycount)
         {
             s = s.Replace("\r\n", "");
             s = s.Replace("\r", "");
             s = s.Split(';')[0];
 
+            if ( s.Length == 0)
+            {
+                return null;
+            }
             // ________________ PROCESS LABEL UPDATE__________________
 
             // process label
@@ -757,7 +909,7 @@ namespace GenesisExplorer
                 {
                     if ( l.name == labelsplit[0].Replace(" ",""))
                     {
-                        l.pos = bOffset + 0x5d;
+                        l.pos = bOffset + 0x5d + 4 + (4*entrycount);
                         break;
                     }
                 }
@@ -836,7 +988,7 @@ namespace GenesisExplorer
                     {
                         if (l.name == sname.Replace(" ",""))
                         {
-                            l.pos = bOffset + 0x5d;
+                            l.pos = bOffset + 0x5d + 4 + (4 * entrycount); ;
                             break;
                         }
                     }
@@ -964,7 +1116,7 @@ namespace GenesisExplorer
                     break;
                 }
             }
-            if (mnemoid == -1)
+            if (mnemoid == -1 )
             {
                 logR.Add("Undefined Mnemonic.");
                 return null;
@@ -978,7 +1130,7 @@ namespace GenesisExplorer
                     break;
                 }
             }
-            if (opnum == -1)
+            if (opnum == -1 )
             {
                 logR.Add("Undefined Mnemonic.");
                 return null;
@@ -1564,6 +1716,7 @@ namespace GenesisExplorer
                 opcode = (byte)r;
 
                 imm = BitConverter.GetBytes(int.Parse(opstr2));
+
                 return new byte[] { opcode, MRR, imm[0], imm[1], imm[2], imm[3] };
             }
             else if ( t1 == 1 && t2 == 1)
