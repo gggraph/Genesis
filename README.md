@@ -64,7 +64,7 @@ The Genesis Blockchain software will create directory and files at its root. Let
 * /blockchain/blocksptr is a file containing data pointing to block files and byte offsets of all official blocks. It is used to easily
   retrieving block data without reading the whole blockchain.  
 
-###### The competitive blocks files 
+##### The competitive blocks files 
 
 * /fork is a directory contaning all competitive blocks. Genesis Blockchain _upgrade_ process happened every time the last index of 
   of competitive blocks reached or going above **last official block index + 6** ( 6 is an arbitrary number which can be changed inside
@@ -72,7 +72,7 @@ The Genesis Blockchain software will create directory and files at its root. Let
 * During mining process, the software will start craft next block from longest competitive blocks file. Mining strategy is up to you. 
 * Competitive blocks are named with the hexadecimal representation of latest block hash in its file. 
           
-###### The UTXO files 
+##### The UTXO files 
 
 * /utxos is a directory containing all _wallets_ at the current state of the official blockchain. In the same way for block files, they are named
   in an ascending order. /utxos/0 containing first wallets which has been registered during blocks validation. 
@@ -81,13 +81,13 @@ The Genesis Blockchain software will create directory and files at its root. Let
   containing public key of 64b, a sold ( or amount of coin hold by the key) and a token called Token of Uniqueness ( or TOU ) which is burnt
   at every new transaction of the wallet holder to avoid double spending problem. 
           
-###### The Temporary storage
+##### The Temporary storage
 
 * /tmp folder contains all files which have been downloaded server-side. 
 * DLL files are both pending transaction data or blocks data waiting to be validated. 
 * Files are systematically deleted after their process. So consider them as _cache_ files. 
           
-###### The Pending Transactions File
+##### The Pending Transactions File
 
 * located at /ptx. This file contains all transaction which has been received by peers or built with command console.
 * ECDSA verification is always done to transactions before being appended to this file. 
