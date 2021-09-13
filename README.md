@@ -72,7 +72,7 @@ The Genesis Blockchain software will create directory and files at its root. Let
 * During mining process, the software will start craft next block from longest competitive blocks file. Mining strategy is up to you. 
 * Competitive blocks are named with the hexadecimal representation of latest block hash in its file. 
           
-##### The UTXO files 
+##### The UTXO Set files 
 
 * /utxos is a directory containing all _wallets_ at the current state of the official blockchain. In the same way for block files, they are named
   in an ascending order. /utxos/0 containing first wallets which has been registered during blocks validation. 
@@ -93,7 +93,17 @@ The Genesis Blockchain software will create directory and files at its root. Let
 * ECDSA verification is always done to transactions before being appended to this file. 
 * When Genesis Software prepare mining, it fills the new block with transaction inside /ptx file. 
 * /ptx file is refreshed every time blockchain upgraded, deleting those who have old TOU or those who have purished. 
+
+##### The Smart Contract Storage Files
+
+* /sc directory contains all contract storage files. A contract storage file is data which can be written by a smart contract code. Its name is 
+  hexadecimal hash representation of the block index and transaction index which contain the contract code.
+* A blank contract storage is created **everytime a new CST is validated inside a block** and only when the block is not competitive anymore. 
+* As deleting utxos files, deleting contract storage file make blockchain corrupted. utxos directory and sc directory are part of the blockchain 
+  current state. 
+  
           
+## Header files & algorythm design 
 
 ## Write Smart Contract
 
@@ -218,7 +228,7 @@ You can memory dump your compiled asm code by clicking on **Dump** button to see
 
 ### Write a simple CRT code
 
-Once you have a ready-to-use CST. **You can write a contract request transaction inside the right down text box.**
+Once you have a ready-to-use CST. **You can write a contract request transaction inside the bottom-right text box.**
 
 Writing CRT is straight forward:
 
@@ -242,6 +252,6 @@ call _label2_ label.
 Once you have both a CST file and a related CRT file, you can run contract using _testcontract_ command in genesis.exe, only for testing your code. 
 It will output registers value to the console. Contract Implementation are currently in development. CST and CRT can only be test with cmd console
 and cannot being validated inside blocks. 
-List of OPCODES can be read at vmopcode1.ini. Don't change this file or CST binary conversion will not work properly! 
+List of OPCODES can be read at vmopcode1.ini. Don't modify this file or CST binary conversion will not work properly! 
 
 **Have fun with the Genesis Virtual Machine!**
