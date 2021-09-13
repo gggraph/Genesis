@@ -119,3 +119,19 @@ The syntax to follow to convert your code to binary is similar to nasm x86 code.
 Pseudo-randomness, listening ports or anything from the outside cannot be achieved!** 
 
 So let's start with a basic example code : 
+          
+          var1 DD 20
+          var2 DD 0
+          
+          start:
+          MOV EAX, [var1]
+          MOV EBX, 8
+          ADD EAX, EBX
+          MOV dword[var1+4], EAX
+          CMP dword[var2], 28
+          JE END
+          MOV ECX, 1
+          JMP start
+          
+          end:
+          HLT
