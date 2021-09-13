@@ -79,7 +79,7 @@ The Genesis Blockchain software will create directory and files at its root. Let
   utxos files are overwritten when upgrading the official blockchain. 
 * UTXO stand for Unspend Transaction Output. An Utxo is a data structure
   containing public key of 64b, a sold ( or amount of coin hold by the key) and a token called Token of Uniqueness ( or TOU ) which is burnt
-  at every new transaction of the wallet holder to avoid double spending problem. 
+  consciously by the wallet holder at every new transaction to avoid double spending problem. 
           
 ##### The Temporary storage
 
