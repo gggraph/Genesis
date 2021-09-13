@@ -234,7 +234,8 @@ Writing CRT is straight forward:
 
 * Define the block index wich contains the contract using ### three hashtags. 
 * Define the transaction index wich contains the contract using ## two hashtags.
-* Define the entry index using # one hashtag. 
+* Define the entry index using # one hashtag.
+* Everything else that can be read as number by the software will become values to push to the stack.   
 
           ### 10
           ##  0
