@@ -331,7 +331,7 @@ cannot being validated inside blocks.
 List of OPCODES can be read at vmopcode1.ini. Don't modify this file or CST binary conversion will not work properly! 
  _=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_
  
-**Have fun with the Genesis Virtual Machine!** 
+**>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Have fun with the Genesis Virtual Machine!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<** 
 
  _=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_
 
