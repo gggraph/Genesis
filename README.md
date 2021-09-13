@@ -186,7 +186,7 @@ Now, we will going to technical material.
 The Genesis Blockchain treat actually with three types of transaction. 
 First one is **DFT** (Default Transaction), which is a basic exchange of valuable data between two wallets. 
 Second is called **CST** (Contract Submission Transaction), this transaction contains a series of instructions for the Genesis Virtual Machine. 
-A CST has a generic header transaction data (public key pointer, secp256k1 signature, a t.o.u. and a purishmment time) but his specific data is a number of entries pointing to memory address and a long list of bytecode. When a CST is validated inside a block, its whole list of instructions can be called by the following type of transaction during the whole blockchain lifetime by any user:
+A CST has a generic header transaction data (see TX header structure table) but its specific data is a number of entries pointing to memory address and a long list of bytecode. When a CST is validated inside a block, its whole list of instructions can be called by the following type of transaction during the whole blockchain lifetime by any user:
 A **CRT** ( Contract Request Transaction ) is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking, CRT fit x86 calling conventions. 
 
 To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (which can be downloaded at /src/build). It looks like this:  
@@ -274,8 +274,8 @@ There is specific instructions related to blockchain contract storage. Here is a
           STF
           HLT
           
-this code snippet, once being called by a **CRT**, will write 4 bytes contained at the top of the stack at the begginning of the storage path file.
-For further understanding, see the long instruction process inside _vm.cpp_
+this code snippet, once being called by a **CRT**, will write 4 bytes contained at the top of the stack, at the begginning of the storage file.
+For further understanding, read the long switch statement inside _vm.cpp_
 
 ### Defining entries
 
@@ -325,9 +325,9 @@ call _label2_ label.
 
 ### Testing a contract
 
-Once you have both a CST file and a related CRT file, you can run contract using _testcontract_ command in genesis.exe, only for testing your code. 
-It will output registers value to the console. Contract Implementation are currently in development. CST and CRT can only be test with cmd console
-and cannot being validated inside blocks. 
+Once you have both a CST file and a related CRT file, you can run contract using _testcontract_ command in genesis.exe. 
+It will output registers value to the console. Contract Implementation are currently in development. CST and CRT can only be test and 
+cannot being validated inside blocks. 
 List of OPCODES can be read at vmopcode1.ini. Don't modify this file or CST binary conversion will not work properly! 
 
 **Have fun with the Genesis Virtual Machine!**
