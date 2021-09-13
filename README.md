@@ -180,7 +180,7 @@ If flag byte is set to 1, data is a SECP256K1 public key.
 | entry jump    | 4             | relative      |
 | gas limit     | 4      | relative      |
 
-## Write Smart Contract
+## Write Decentralized Applications
 
 Now, we will going to technical material. 
 The Genesis Blockchain treat actually with three types of transaction. 
