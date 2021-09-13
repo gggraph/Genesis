@@ -105,6 +105,12 @@ The Genesis Blockchain software will create directory and files at its root. Let
           
 ## Data structure
 
+| First Header  | Second Header |
+| ------------- | ------------- |
+| Content Cell  | Content Cell  |
+| Content Cell  | Content Cell  |
+
+
 ## Write Smart Contract
 
 Now, we will going to technical material. 
