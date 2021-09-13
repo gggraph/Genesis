@@ -92,7 +92,7 @@ The Genesis Blockchain software will create directory and files at its root. Let
 * located at /ptx. This file contains all transaction which has been received by peers or built with command console.
 * ECDSA verification is always done to transactions before being appended to this file. 
 * When Genesis Software prepare mining, it fills the new block with transaction inside /ptx file. 
-* /ptx file is refreshed every time blockchain upgraded, deleting those who have old TOU or those who have purished. 
+* /ptx file is refreshed at every blockchain upgrade, deleting transactions who have old TOU or those who have purished. 
 
 ##### The Smart Contract Storage Files
 
