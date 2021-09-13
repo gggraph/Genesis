@@ -108,7 +108,7 @@ To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (w
 
 ![alt text](https://github.com/gggraph/genesis/blob/main/TRANSACTION%20VIEWER%20B.png)
 
-##### Write a simple CST code
+### Write a simple CST code
 
 You can write your contract assembly code inside left textbox element (the big one). 
 Just to make things clear, the _genesis vm_ can work with 8086 original instruction set. It has all general registers and a flag register which is not fully implemented yet (only ZF is used) . 
@@ -174,3 +174,41 @@ This asm code will -
 * set register C value to 0
 * increment C value by 1
 * halt the vm 
+
+There is specific instructions related to blockchain contract storage. Here is an example of writing to the storage file using OPCODE **STF**
+
+          func:
+          PUSH EBP
+          MOV  EBP, ESP
+          XOR  EAX, EAX
+          MOV  ECX, 4
+          MOV  EDX, EBP
+          ADD  EDX, 4
+          STF
+          HLT
+          
+this code snippet, once being called by a **CRT**, will write 4 bytes contained at the top of the stack at the begginning of the storage path file.
+For further understanding, see the long instruction process inside _vm.cpp_
+
+#### Defining entries
+
+To make your contract interactable during the blockchain lifetime, you will have to define some entries to contract bytecodes. 
+Put a # hastage and the label name at the end of your contract to make this label callable by user in future block transactions. 
+Here is an example : 
+
+          main:
+          HLT
+          
+          entryname:
+          PUSH EBP
+          MOV EBP, ESP
+          MOV EAX, [EBP+4]
+          HLT
+          
+          #main
+          #entryname
+
+the main label will be callable but will lead to halting opcode. the entryname label will be also callable moving the last pushed data to register A. 
+The generated **CST** will propose two entries.
+
+### Write a simple CRT code
