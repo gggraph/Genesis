@@ -57,12 +57,12 @@ The Genesis Blockchain will create directory and files at its root. Let's see th
 
 ###### The blockchain files
 
-          * /blockchain is a directory containing all _official_ blocks. There are blocks that has been validated and has won the distance rule : 
+* /blockchain is a directory containing all _official_ blocks. There are blocks that has been validated and has won the distance rule : 
           they are fully integrated to the blockchain. 
-          * All blocks are stored and named in an ascending way. /blockchain/0 is a file containing genesis block and all future blocks up to 
-          4 294 967 295  bytes ( originally designed to be written on FAT32 system). /blockchain/1 containing all next official blocks ... etc. 
-          * /blockchain/blocksptr is a file containing data pointing to block files and byte offsets of all official blocks. It is used to easily
-          retrieving block data without reading the whole blockchain.  
+* All blocks are stored and named in an ascending way. /blockchain/0 is a file containing genesis block and all future blocks up to 
+  4 294 967 295  bytes ( originally designed to be written on FAT32 system). /blockchain/1 containing all next official blocks ... etc. 
+* /blockchain/blocksptr is a file containing data pointing to block files and byte offsets of all official blocks. It is used to easily
+  retrieving block data without reading the whole blockchain.  
 
 ###### The competitive blocks files 
 
