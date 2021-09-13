@@ -197,7 +197,7 @@ To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (w
 
 You can write your contract assembly code inside left textbox element (the big one). 
 Just to make things clear, the _genesis vm_ can work with 8086 original instruction set. It has all general registers and a flag register which is not fully implemented yet (only ZF is used) . 
-Smart Contract is loaded at **0x5D address of the vm memory**. VM memory allocation size is limited to **32kb**. Stack going downward. Registers depth is 32-bit.
+Smart Contract is loaded at **0x5D memory offset of the virtual machine**. VM memory allocation size is limited to **32kb**. Stack going downward. Registers depth is 32-bit.
 Genesis vm acts as a CISC microprocessor. You will meet again MOD-REG-RM, SIB mode, direct and indirect addressing, 8-bit or 32-bit displacement... etc.
 The syntax to follow to convert your code to binary is similar to nasm x86 code. 
 **Last but not least, the instruction set is limited to blockchain usage. VM can only read and write data within its memory or its contract storage file. 
