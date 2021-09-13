@@ -329,9 +329,11 @@ Once you have both a CST file and a related CRT file, you can run contract using
 It will output registers value to the console. Contract Implementation are currently in development. CST and CRT can only be test and 
 cannot being validated inside blocks. 
 List of OPCODES can be read at vmopcode1.ini. Don't modify this file or CST binary conversion will not work properly! 
- _=_=_
--_-_-_-_-_-_-_-_-_-_-_-_-_-_--_-_-_-_-_-_-**Have fun with the Genesis Virtual Machine!**-_-_-_-_-_-_-_-_-_-_-_-_-_-_--_-_-_-_-_-_-
- -_-_-_-_-_-_-_-_-_-_-_-_-_-_--_-_-_-_-_-_--_-_-_-_-_-_-_-_-_-_-_-_-_-_--_-_-_-_-_-_--_-_-_-_-_-_-_-_-_-_-_-_-_-_--_-_-_-_-_-_-
+ _=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_
+ 
+                                     **Have fun with the Genesis Virtual Machine!**
+
+ _=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_=_
 
 # Further sight
 
