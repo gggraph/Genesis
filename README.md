@@ -192,7 +192,7 @@ There is specific instructions related to blockchain contract storage. Here is a
 this code snippet, once being called by a **CRT**, will write 4 bytes contained at the top of the stack at the begginning of the storage path file.
 For further understanding, see the long instruction process inside _vm.cpp_
 
-#### Defining entries
+### Defining entries
 
 To make your contract interactable during the blockchain lifetime, you will have to define some entries to contract bytecodes. 
 Put a # hastage and the label name at the end of your contract to make this label callable by user in future block transactions. 
@@ -237,10 +237,11 @@ call _label2_ label.
 
 **Output the CST file by clicking on Create CST button.** 
 
-#### Testing a contract
+### Testing a contract
 
 Once you have both a CST file and a related CRT file, you can run contract using _testcontract_ command in genesis.exe, only for testing your code. 
 It will output registers value to the console. Contract Implementation are currently in development. CST and CRT can only be test with cmd console
 and cannot being validated inside blocks. 
+List of OPCODES can be read at vmopcode1.ini. Don't change this file or CST binary conversion will not work properly! 
 
-**Have fun with the Genesis Virtual VM!**
+**Have fun with the Genesis Virtual Machine!**
