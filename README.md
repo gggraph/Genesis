@@ -55,7 +55,8 @@ machines, simply by editing the file. It is by default configured to local addre
 
 The Genesis Blockchain will create directory and files at its root. Let's see them one by one : 
 
-#The blockchain files 
+#The blockchain files
+
           */blockchain is a directory containing all _official_ blocks. There are blocks that has been validated and has won the distance rule : 
           they are fully integrated to the blockchain. 
           *All blocks are stored and named in an ascending way. /blockchain/0 is a file containing genesis block and all future blocks up to 
@@ -64,6 +65,7 @@ The Genesis Blockchain will create directory and files at its root. Let's see th
           retrieving block data without reading the whole blockchain.  
 
 #The competitive blocks files 
+
           */fork is a directory contaning all competitive blocks. Genesis Blockchain _upgrade_ process happened every time the last index of 
           of competitive blocks reached or going above **last official block index + 6** ( 6 is an arbitrary number which can be changed inside
           params.h ).
@@ -71,6 +73,7 @@ The Genesis Blockchain will create directory and files at its root. Let's see th
           *Competitive blocks are named with the hexadecimal representation of latest block hash in its file. 
           
 #The UTXO files 
+
           */utxos is a directory containing all _wallets_ at the current state of the official blockchain. In the same way for block files, they are named
           in an ascending order. /utxos/0 containing first wallets which has been registered during blocks validation. 
           utxos files are overwritten when upgrading the official blockchain. 
@@ -97,7 +100,7 @@ The Genesis Blockchain treat actually with three types of transaction.
 First one is DFT (Default Transaction), which is a basic exchange of coin between two wallets. 
 Second is called CST (Contract Submission Transaction), this transaction contains a series of instructions for the Genesis Virtual Machine. 
 A CST has a generic header transaction data (public key pointer, secp256k1 signature, a t.o.u. and a purishmment time) but his specific data is a number of entries pointing to memory address and a long list of bytecode. When a CST is validated inside a block, its whole list of instructions can be called by the following type of transaction during the whole blockchain lifetime by any user:
-A CRT ( Contract Request Transaction ) is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking a CRT is like calling a function in a piece of code somewhere in the blockchain.  
+A CRT ( Contract Request Transaction ) is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking, CRT fit x86 calling conventions. 
 
 To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (which can be downloaded at /src/build). It looks like this:  
 
