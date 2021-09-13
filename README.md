@@ -103,7 +103,7 @@ The Genesis Blockchain software will create directory and files at its root. Let
   current state. 
   
           
-## Header files & algorythm design 
+## Data structure
 
 ## Write Smart Contract
 
@@ -255,3 +255,9 @@ and cannot being validated inside blocks.
 List of OPCODES can be read at vmopcode1.ini. Don't modify this file or CST binary conversion will not work properly! 
 
 **Have fun with the Genesis Virtual Machine!**
+
+# Further sight
+
+## Header files & algorythm design 
+
+## Calling method for blockchain monitoring
