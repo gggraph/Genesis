@@ -55,7 +55,7 @@ machines, simply by editing the file. It is by default configured to local addre
 
 The Genesis Blockchain software will create directory and files at its root. Let's see them one by one : 
 
-###### The blockchain files
+##### The blockchain files
 
 * /blockchain is a directory containing all _official_ blocks. There are blocks that has been validated and has won the distance rule : 
           they are fully integrated to the blockchain. 
