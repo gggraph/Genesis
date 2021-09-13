@@ -119,7 +119,8 @@ The syntax to follow to convert your code to binary is similar to nasm x86 code.
 Pseudo-randomness, listening ports or anything from the outside cannot be achieved!** 
 
 So let's start with a basic example code : 
-          
+
+```
           var1 DD 20
           var2 DD 0
           
@@ -136,6 +137,7 @@ So let's start with a basic example code :
           end:
           HLT
 
+```
 This asm code will -
 * define two 32-bit unsigned integer at its start. One called var1, the other var2.
 * copy 4 bytes from var1 memory address to register A
