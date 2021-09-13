@@ -109,7 +109,7 @@ The Genesis Blockchain software will create directory and files at its root. Let
 
 Now, we will going to technical material. 
 The Genesis Blockchain treat actually with three types of transaction. 
-First one is **DFT** (Default Transaction), which is a basic exchange of coin between two wallets. 
+First one is **DFT** (Default Transaction), which is a basic exchange of valuable data between two wallets. 
 Second is called **CST** (Contract Submission Transaction), this transaction contains a series of instructions for the Genesis Virtual Machine. 
 A CST has a generic header transaction data (public key pointer, secp256k1 signature, a t.o.u. and a purishmment time) but his specific data is a number of entries pointing to memory address and a long list of bytecode. When a CST is validated inside a block, its whole list of instructions can be called by the following type of transaction during the whole blockchain lifetime by any user:
 A **CRT** ( Contract Request Transaction ) is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking, CRT fit x86 calling conventions. 
