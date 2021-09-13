@@ -105,11 +105,80 @@ The Genesis Blockchain software will create directory and files at its root. Let
           
 ## Data structure
 
+Even if the Genesis blockchain solution doesn't treat with object-oriented programming, using raw bytes pointer to craft.  
+Its blocks, transactions and tokens can be represented as following table : 
+
+##### Block structure
+
 | data name     | byte size     | offset        |
 | ------------- | ------------- | ------------- |
-| Content Cell  | Content Cell  | data name     |
-| Content Cell  | Content Cell  | data name     |
+| index         | 4             | 0             |
+| header hash   | 32            | 4             |
+| previous hash | 32            | 36            |
+| unix timestamp| 4             | 68            |
+| hash target   | 32            | 72            |
+| nonce         | 4             | 104           |
+| miner token   | 5 or 65       | 108           |
+| tx count      | 2             | 113 or 173    |
+| transactions  | variable      | 115 or 175    |
 
+
+##### Miner Token structure
+
+If flag byte is set to 0, data is an utxo identifier. 
+If flag byte is set to 1, data is a SECP256K1 public key.
+
+| data name     | byte size     | offset        |
+| ------------- | ------------- | ------------- |
+| flag byte     | 1             | 0             |
+| data          | 4 or 64       | 1             |
+
+##### UTXO structure 
+
+| data name     | byte size     | offset        |
+| ------------- | ------------- | ------------- |
+| public key    | 32            | 0             |
+| T O U         | 4             | 32            |
+| Sold          | 4             | 36            |
+
+##### TX Header structure 
+
+| data name     | byte size     | offset        |
+| ------------- | ------------- | ------------- |
+| utxo id       | 4             | 0             |
+| ECDSA         | 64            | 4             |
+| Burnt Token   | 4             | 68            |
+| Purishment    | 4             | 72            |
+| Fee           | 4             | 76            |
+| Flag          | 1             | 77            |
+| Data size     | 4             | 81            |
+
+##### DFT data structure 
+
+| data name     | byte size     | offset        |
+| ------------- | ------------- | ------------- |
+| rcv flag      | 1             | 0             |
+| amount        | 4             | 1             |
+| rcv key       | 4 or 64       | 5             |
+
+##### CST data structure 
+
+| data name     | byte size     | offset        |
+| ------------- | ------------- | ------------- |
+| entries count | 4             | 0             |
+| entries       | 4xentry count | 4             |
+| contract code | relative      | relative      |
+
+
+##### CRT data structure 
+
+| data name     | byte size     | offset        |
+| ------------- | ------------- | ------------- |
+| block ptr     | 4             | 0             |
+| tx ptr        | 4             | 4             |
+| push ops.     | relative      | 8             |
+| entry jump    | 4             | relative      |
+| gas limit     | 4      | relative      |
 
 ## Write Smart Contract
 
