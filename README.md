@@ -99,11 +99,23 @@ The Genesis Blockchain software will create directory and files at its root. Let
 
 Now, we will going to technical material. 
 The Genesis Blockchain treat actually with three types of transaction. 
-First one is DFT (Default Transaction), which is a basic exchange of coin between two wallets. 
-Second is called CST (Contract Submission Transaction), this transaction contains a series of instructions for the Genesis Virtual Machine. 
+First one is **DFT** (Default Transaction), which is a basic exchange of coin between two wallets. 
+Second is called **CST** (Contract Submission Transaction), this transaction contains a series of instructions for the Genesis Virtual Machine. 
 A CST has a generic header transaction data (public key pointer, secp256k1 signature, a t.o.u. and a purishmment time) but his specific data is a number of entries pointing to memory address and a long list of bytecode. When a CST is validated inside a block, its whole list of instructions can be called by the following type of transaction during the whole blockchain lifetime by any user:
-A CRT ( Contract Request Transaction ) is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking, CRT fit x86 calling conventions. 
+A **CRT** ( Contract Request Transaction ) is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking, CRT fit x86 calling conventions. 
 
 To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (which can be downloaded at /src/build). It looks like this:  
 
 ![alt text](https://github.com/gggraph/genesis/blob/main/TRANSACTION%20VIEWER%20B.png)
+
+##### Write a simple CST code
+
+You can write your contract assembly code inside left textbox element (the big one). 
+Just to make things clear, the _genesis vm_ can work with 8086 original instruction set. It has all general registers and a flag register which is not fully implemented yet (only ZF is used) . 
+Smart Contract is loaded at **0x5D address of the vm memory**. VM memory allocation size is limited to **32kb**. Stack going downward. Registers depth is 32-bit.
+Genesis vm acts as a CISC microprocessor. You will meet again MOD-REG-RM, SIB mode, direct and indirect addressing, 8-bit or 32-bit displacement... etc.
+The syntax to follow to convert your code to binary is similar to nasm x86 code. 
+**Last but not least, the instruction set is limited to blockchain usage. VM can only read and write data within its memory or its contract storage file. 
+Pseudo-randomness, listening ports or anything from the outside cannot be achieved!** 
+
+So let's start with a basic example code : 
