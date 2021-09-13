@@ -129,9 +129,48 @@ So let's start with a basic example code :
           ADD EAX, EBX
           MOV dword[var1+4], EAX
           CMP dword[var2], 28
-          JE END
+          JE  END
           MOV ECX, 1
           JMP start
           
           end:
           HLT
+
+This asm code will -
+* define two 32-bit unsigned integer at its start. One called var1, the other var2.
+* copy 4 bytes from var1 memory address to register A
+* copy constant 8 to register B
+* adding register B value to register A
+* copy  register A to memory address of var1 + 4 wich is actually the memory address of var2 ! 
+* compare var2 value to 28
+* then jump to label end if equal
+* halt the vm 
+
+Going further with a basic call and stack mechanism : 
+
+          start:
+          MOV  EAX, 16
+          SHL  EAX
+          PUSH EAX
+          CALL func
+          XOR ECX, ECX
+          INC ECX
+          HLT
+          
+          func:
+          PUSH EBP
+          MOV EBP,ESP
+          MOV EDX, [EBP+4]
+          POP EBP
+          RET 4
+          
+This asm code will -
+* set register A value to 16
+* left shift register A data, so multiplying itself by 2
+* push 4 bytes of register A content to the stack
+* jump to func label address 
+* moving last four bytes of the stack to register D value
+* return and increment stack pointer by 4
+* set register C value to 0
+* increment C value by 1
+* halt the vm 
