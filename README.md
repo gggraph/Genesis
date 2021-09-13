@@ -196,19 +196,49 @@ To make your contract interactable during the blockchain lifetime, you will have
 Put a # hastage and the label name at the end of your contract to make this label callable by user in future block transactions. 
 Here is an example : 
 
-          main:
+          label1:
           HLT
           
-          entryname:
+          label2:
           PUSH EBP
           MOV EBP, ESP
           MOV EAX, [EBP+4]
           HLT
           
-          #main
-          #entryname
+          #label1
+          #label2
 
-the main label will be callable but will lead to halting opcode. the entryname label will be also callable moving the last pushed data to register A. 
+the _label1_ label will be callable but will lead to halting opcode. the _label2_ label will be also callable moving the last pushed data to register A. 
 The generated **CST** will propose two entries.
 
+You can memory dump your compiled asm code by clicking on **Dump** button to see raw byte code and their bits sequence. Also check for errors. 
+**Output the CST file by clicking on Create CST button.** 
+
 ### Write a simple CRT code
+
+Once you have a ready-to-use CST. **You can write a contract request transaction inside the right down text box.**
+
+Writing CRT is straight forward:
+
+* Define the block index wich contains the contract using ### three hashtags. 
+* Define the transaction index wich contains the contract using ## two hashtags.
+* Define the entry index using # one hashtag. 
+
+          ### 10
+          ##  0
+          #   1
+          
+          18
+          
+Here is a raw CRT writing. If tenth block of the blockchain contains CST of last paragraph at its first transaction. It will push 18 to the vm stack then 
+call _label2_ label. 
+
+**Output the CST file by clicking on Create CST button.** 
+
+#### Testing a contract
+
+Once you have both a CST file and a related CRT file, you can run contract using _testcontract_ command in genesis.exe, only for testing your code. 
+It will output registers value to the console. Contract Implementation are currently in development. CST and CRT can only be test with cmd console
+and cannot being validated inside blocks. 
+
+**Have fun with the Genesis Virtual VM!**
