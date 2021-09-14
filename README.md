@@ -421,3 +421,18 @@ sha256 :
 https://code.google.com/p/cryptosuite/
 
 ## Calling method for blockchain monitoring
+
+### Get Block data
+
+To read a block of the blockchain. You will first need to load blocks pointer in memory, using  
+          LoadBlockPointers()
+
+Because blocks size are not constant, you will have to do some heap allocation to store the block. 
+Prepare a byte pointer and call GetOfficialBlock() method to load the block. Don't forget to deallocate it after the needs. 
+          
+          // Get Genesis block (block #0)
+          unsigned char * block = GetOfficialBlock(0); 
+          /* do what you want here */
+          free(block); 
+
+          
