@@ -30,7 +30,7 @@ It can run **smartcontracts** through a virtual machine similar to x86 microproc
 purposes). 
 A custom assembler is provided, langage syntax is similar to NASM.
 
-Genesis Blockchain parameters are easily tweakable and have been originally made to experiment mining process.
+Genesis Blockchain parameters are easily tweakable and software have been originally made to experiment mining process.
 
 An _untitled cryptocurrency_ is also implemented, following same dynamics as Bitcoin software (coin halving, mining reward...etc.)
 
@@ -50,6 +50,12 @@ Make sure _net.ini_ file is located at the root directory of the executable. It 
 all your peers IP. Genesis Blockchain only run on local environment even if its design was purposed
 to meet larger and public network. You can manually set IP:port for both starting a server and connecting to other
 machines, simply by editing the file. It is by default configured to local address 127.0.0.1 for testing purpose.
+
+![alt text](https://github.com/gggraph/genesis/blob/main/start%20command.png)
+
+Run executable, you can interact typing command. List of all available command are printed to console at start. 
+You can first try to run demo program entering **demo** . Create a wallet entering **createwallet** and start mine some blocks with 
+newly created public key using **stepmining** 
 
 ## About file structure 
 
