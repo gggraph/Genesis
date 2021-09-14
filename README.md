@@ -461,6 +461,8 @@ Once you have a block pointer, you can use it to get its specific data. See bloc
           memcpy(hash, block + 4, 32); 
           // print hex representation
           printHash(hash); 
+          // fast way to print previous block hash
+          printHash(block+36);
           free(block); 
 ```
 You can also retrieve transaction data from block pointer. Make sure block has a transaction : 
