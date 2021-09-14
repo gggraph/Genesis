@@ -468,3 +468,21 @@ You can also retrieve transaction data from block pointer. Make sure block has a
           }
           free(block); 
 ```
+### Tweaking Proof of work constants
+
+All _proof of work_ constant value are inside params.h
+Let's have a look at some of them : 
+
+```cpp 
+          #define TARGET_CLOCK			42 
+          #define TARGET_TIME				128
+          #define POW_TARGET_TIME                           7
+          #define TARGET_FACTOR			4
+```
+TARGET_CLOCK is a tick of the hash target update. If you change it to 2016, every 2016 blocks, hash target will change. 
+TARGET_TIME is a human way to see number of seconds spent between two blocks creation. Mine a block will always lasts something closed to 128 seconds. 
+Yet this constant has no effect, the real value which will impact block creation time is POW_TARGET_TIME which **has to be a power of 2**. 
+2 ^ 7 is 128. For improved time complexity of hash target computation, logicial right shift is used for dividing time spent. 
+TARGET_FACTOR is boundaries to new hash target value. If set to 8, new hash target will never be more than 8 times higher or less than 8 times lower.
+
+Changing thoses variables and the GENESIS_TARGET constant values (located at genesis.cpp ) will let you experiment hashcash mechanism. 
