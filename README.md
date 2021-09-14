@@ -472,7 +472,7 @@ You can also retrieve transaction data from block pointer. Make sure block has a
                 unsigned char * TX = GetBlockTransaction(block, 0); 
                 // fast method to print transaction data. 
                 PrintTransaction( TX ) ; 
-                // Because transaction is a pointer of block memory. There is not extra 
+                // Because transaction is a pointer to block memory. There is not extra 
                 // memory allocation. 
           }
           free(block); 
