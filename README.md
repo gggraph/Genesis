@@ -475,8 +475,8 @@ Let's have a look at some of them :
 
 ```cpp 
           #define TARGET_CLOCK			42 
-          #define TARGET_TIME				128
-          #define POW_TARGET_TIME                           7
+          #define TARGET_TIME			128
+          #define POW_TARGET_TIME             7
           #define TARGET_FACTOR			4
 ```
 TARGET_CLOCK is a tick of the hash target update. If you change it to 2016, every 2016 blocks, hash target will change. 
