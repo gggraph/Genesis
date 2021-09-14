@@ -436,4 +436,35 @@ Prepare a byte pointer and call GetOfficialBlock() method to load the block. Don
           /* do what you want here */
           free(block); 
 ```
-          
+Once you have a block pointer, you can use it to get its specific data. See bloc.h or use bytes table declared above. 
+
+```cpp          
+          // Get Genesis block (block #0)
+          unsigned char * block = GetOfficialBlock(0); 
+          // get nonce of the block
+          uint32_t nonce = GetBlockNonce(block);
+          // Get its hash. 2 ways. 
+          unsigned char hash[32]; 
+          memcpy(hash, GetBlockHash(block), 32); 
+          // or 
+          memcpy(hash, block + 4, 32); 
+          // print hex representation
+          printHash(hash); 
+          free(block); 
+```
+You can also retrieve transaction data from block pointer. Make sure block has a transaction : 
+```cpp          
+          // Get latest block
+          uint32_t index = GetLatestBlockIndex(true); 
+          unsigned char * block = GetOfficialBlock(index); 
+          // make sure block has a transaction
+          if (  GetTransactionNumber(block) > 0 ) {
+                // Get first Transaction
+                unsigned char * TX = GetBlockTransaction(block, 0); 
+                // fast method to print transaction data. 
+                PrintTransaction( TX ) ; 
+                // Because transaction is a pointer of block memory. There is not extra 
+                // memory allocation. 
+          }
+          free(block); 
+```
