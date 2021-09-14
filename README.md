@@ -335,6 +335,9 @@ List of OPCODES can be read at vmopcode1.ini. Don't modify this file or CST bina
 
 # Further sight
 
-## Header files & algorythm design 
+## Source files & their methods
+
+| bloc.h        | 
+| ------------- |
 
 ## Calling method for blockchain monitoring
