@@ -485,7 +485,7 @@ TARGET_TIME is a human way to see number of seconds spent between two blocks cre
 Yet this constant has no effect, the real value which will impact block creation time is POW_TARGET_TIME which **has to be a power of 2**. 
 2 ^ 7 is 128. 
 
-For improved time complexity of hash target computation, logicial right shift is used for dividing time spent. 
+For improved time complexity of hash target computation, logicial right shift is used for dividing hash target to desire target_time. 
 
 TARGET_FACTOR is boundaries to new hash target value. If set to 8, new hash target will never be more than 8 times higher or less than 8 times lower the preceding target.
 
