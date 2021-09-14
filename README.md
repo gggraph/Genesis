@@ -40,9 +40,9 @@ All is written in C-style for low-end hardware compatibility.
 
 Genesis was made for Windows OS. You can compile it importing all .cpp and .h files located in /src directory using the IDE of your choice.
 A pre-built executable is located in /src/build for windows console app.  
-
-                                  https://github.com/gggraph/genesis/blob/main/source%20cpp/build/Genesis.exe
-
+<p align="center">
+**https://github.com/gggraph/genesis/blob/main/source%20cpp/build/Genesis.exe**
+</p>
 A MONO version which can be used on Linux system can be found at https://github.com/lionelbroye/BIM/blob/master/Genesis%20Chain/build/firstchain.exe. 
 It is the first version of Genesis software written in c# .NET frameworks 
 
