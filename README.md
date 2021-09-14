@@ -335,9 +335,89 @@ List of OPCODES can be read at vmopcode1.ini. Don't modify this file or CST bina
 
 # Further sight
 
-## Source files & their methods
+## Source files
 
-| bloc.h        | 
+| Bloc.h        | 
 | ------------- |
+
+Header file to access block data, either from official or from fork files. Most of the methods output raw unsigned char pointer to block data such as its hash or 
+one of its transaction... etc. 
+
+| Mine.h        | 
+| ------------- |
+
+Header file to access mining function. It's there where the software will prepare and hash new blocks. 
+
+| UI.h          | 
+| ------------- |
+
+Console commands main thread and basic graphic interface. 
+
+| Utils.h       | 
+| ------------- |
+
+Miscellaneous methods to convert byte array to integer. writing, reading, deleting files. Get/set bit in a byte... etc.
+
+| arith256.h    | 
+| ------------- |
+
+Header file to manipulate 256-bit integer. It contains only compare, right shift, add and multiply function according to proof-of-work necessity.  
+
+| consensus.h   | 
+| ------------- |
+
+Main block validation method. ProcessBlocks() method will start validating blocks file from qfiles (see NetfileManager.cpp) 
+Contains also hash target computation, mining reward computation, timestamp validation. It is the core of the consensus algorithm. 
+
+| params.h      | 
+| ------------- |
+
+Where all proof-of-work related constants are stored.
+
+| tx.h          | 
+| ------------- |
+
+Header file to get transaction data inside a block, verify signature, craft new keys and all transaction related code such as verify contract returning
+gas used... 
+It also provide pending transactions file manipulation methods. 
+
+| utxo.h        | 
+| ------------- |
+
+Header file containing wallet related function. You can get utxo data from there, virtualize wallet at a specific instant of 
+the blockchain time. Mainly use when verifying block transaction. 
+
+| vm.h          | 
+| ------------- |
+
+Genesis virtual machine load contract and run methods. 
+
+| NetfileManager.h | 
+| ---------------  |
+
+Header file that contains list of file data waiting to be proccessed during the main loop. 
+
+| NetServer.h      | 
+| ---------------  |
+
+Start server method and download handler. 
+
+| NetClient.h      | 
+| ---------------  |
+
+Connecting to peers and all broadcasting methods. 
+
+| Genesis.h        | 
+| ---------------  |
+
+Program entry. Main thread method. Genesis block creation and blockchain initialization methods. 
+
+**about sha256.h and uECC.h** 
+
+Those files are cryptography algorithm used by the Genesis blockchain. **This is not my work!** : 
+elliptic curve signature : 
+https://github.com/kmackay/micro-ecc
+sha256 : 
+https://code.google.com/p/cryptosuite/
 
 ## Calling method for blockchain monitoring
