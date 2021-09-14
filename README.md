@@ -425,14 +425,15 @@ https://code.google.com/p/cryptosuite/
 ### Get Block data
 
 To read a block of the blockchain. You will first need to load blocks pointer in memory, using  
+```cpp 
           LoadBlockPointers()
-
+```
 Because blocks size are not constant, you will have to do some heap allocation to store the block. 
 Prepare a byte pointer and call GetOfficialBlock() method to load the block. Don't forget to deallocate it after the needs. 
-          
+```cpp          
           // Get Genesis block (block #0)
           unsigned char * block = GetOfficialBlock(0); 
           /* do what you want here */
           free(block); 
-
+```
           
