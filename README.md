@@ -105,8 +105,7 @@ The Genesis Blockchain software will create directory and files at its root. Let
           
 ## Data structure
 
-Even if the Genesis blockchain solution doesn't treat with object-oriented programming, using raw bytes pointer to craft.  
-Its blocks, transactions and tokens can be represented as following table : 
+Even if the Genesis blockchain solution doesn't treat with object-oriented programming, its blocks, transactions and tokens can be represented as following table : 
 
 ##### Block structure
 
@@ -146,7 +145,7 @@ If flag byte is set to 1, data is a SECP256K1 public key.
 | data name     | byte size     | offset        |
 | ------------- | ------------- | ------------- |
 | utxo id       | 4             | 0             |
-| ECDSA         | 64            | 4             |
+| SECP256K1 sign| 64            | 4             |
 | Burnt Token   | 4             | 68            |
 | Purishment    | 4             | 72            |
 | Fee           | 4             | 76            |
@@ -182,12 +181,12 @@ If flag byte is set to 1, data is a SECP256K1 public key.
 
 ## Write Decentralized Applications
 
-Now, we will going to technical material. 
+Now, we will going to technical materials. 
 The Genesis Blockchain treat actually with three types of transaction. 
 First one is **DFT** (Default Transaction), which is a basic exchange of valuable data between two wallets. 
 Second is called **CST** (Contract Submission Transaction), this transaction contains a series of instructions for the Genesis Virtual Machine. 
 A CST has a generic header transaction data (see TX header structure table) but its specific data is a number of entries pointing to memory address and a long list of bytecode. When a CST is validated inside a block, its whole list of instructions can be called by the following type of transaction during the whole blockchain lifetime by any user:
-A **CRT** ( Contract Request Transaction ) is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking, CRT fit x86 calling conventions. 
+A **CRT** ( Contract Request Transaction ). CRT is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking, CRT fit x86 calling conventions. 
 
 To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (which can be downloaded at /src/build). It looks like this:  
 
@@ -201,7 +200,7 @@ Smart Contract is loaded at **0x5D memory offset of the virtual machine**. VM me
 Genesis vm acts as a CISC microprocessor. You will meet again MOD-REG-RM, SIB mode, direct and indirect addressing, 8-bit or 32-bit displacement... etc.
 The syntax to follow to convert your code to binary is similar to nasm x86 code. 
 **Last but not least, the instruction set is limited to blockchain usage. VM can only read and write data within its memory or its contract storage file. 
-Pseudo-randomness, listening ports or anything from the outside cannot be achieved!** 
+Pseudo-randomness, listening ports or anything from the outside cannot be achieved.** 
 
 So let's start with a basic example code : 
 
@@ -223,7 +222,7 @@ So let's start with a basic example code :
           HLT
 
 ```
-This asm code will -
+This asm code will :
 * define two 32-bit unsigned integer at its start. One called var1, the other var2.
 * copy 4 bytes from var1 memory address to register A
 * copy constant 8 to register B
@@ -251,7 +250,7 @@ Going further with a basic call and stack mechanism :
           POP EBP
           RET 4
           
-This asm code will -
+This asm code will :
 * set register A value to 16
 * left shift register A data, so multiplying itself by 2
 * push 4 bytes of register A content to the stack
