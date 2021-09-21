@@ -328,8 +328,8 @@ Writing CRT is straight forward:
           
           18
           
-Here is a raw CRT writing. If tenth block of the blockchain contains CST of last paragraph at its first transaction. It will push 18 to the vm stack then 
-call _label2_ label. 
+If block number 10 of the blockchain contains CST of the last paragraph at its first transaction. Those instructions will push 18 to the vm stack then 
+call _label2_ label, so put 18 to reg A. 
 
 **Output the CST file by clicking on Create CST button.** 
 
