@@ -196,7 +196,7 @@ Now, we will going to technical materials.
 The Genesis Blockchain treat actually with three types of transaction. 
 First one is **DFT** (Default Transaction), which is a basic exchange of valuable data between two wallets. 
 Second is called **CST** (Contract Submission Transaction), this transaction contains a series of instructions for the Genesis Virtual Machine. 
-A CST has a generic header transaction data (see TX header structure table) but its specific data is a number of entries pointing to bytecodes in vm memory. When a CST is validated inside a block, its whole list of instructions can be called by the following type of transaction during the whole blockchain lifetime and by any user:
+A CST has a generic header transaction data (see TX header structure table) but its specific data is a number of entries pointing to **bytecodes** in vm memory. When a CST is validated inside a block, its whole list of instructions (the smartcontract) can be called by the following type of transaction during the whole blockchain lifetime and by any users:
 A **CRT** ( Contract Request Transaction ). CRT is a transaction that run a smartcontract code at specific offset. Technically, it will load the compiled smart contract, push some data to the virtual machine stack if necessary, then perform a jump at a given memory address. Just thinking, CRT fit x86 calling conventions. 
 
 To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (which can be downloaded at /src/build). It looks like this:  
