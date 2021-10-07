@@ -7,7 +7,7 @@ myvariable dd 8 ; put uint 8 in memory right here
  
 main:
 mov ecx, 10
-jmp jmptest
+
 loop:
 cmp ecx, 0
 je  end
@@ -16,33 +16,22 @@ mov eax, [myvariable] ; copy myvariable memory to register A
 add dword[myvariable], eax ; add myvariable by itself
 dec ecx               ; repeat  it 10 times
 jmp loop
-hlt
 
-jmptest:
-mov eax, ecx
-add eax, [myvariable] 
-hlt
-
-fastentrytest:
-push ebp
-mov ebp, esp
-mov ebx, [ebp+4]
-pop ebp
-hlt
+end:
+jmp end
 
 ; here is an entry to use with CRT code
 customentry:
-push ebp
 mov ebp, esp
+push ebp
 mov ebx, [ebp+4]
 mov eax, 0     ; file offset to write
 mov ecx, 4     ; number of bytes to write
 mov edx, [ebx] ; write ebx content
 stf
 pop ebp
-hlt
+ret 
 
 ; put your entries here using # and the label name
 #main
 #customentry
-#fastentrytest
