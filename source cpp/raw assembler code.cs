@@ -1,7 +1,4 @@
-
-/*
-                     ___________________________________ RAW ASSEMBLER IMPLEMENTATION FOR .NET WINDOWS FORMS ___________________________________ 
-*/
+/*------------------------------------------------ ASSEMBLER RAW ----------------------------------------------*/
 
 using System;
 using System.Collections.Generic;
@@ -16,10 +13,10 @@ namespace GenesisExplorer
 
     class Assembler
     {
-        public static byte[]    map    = new byte[256];
-        public static byte[]    numap  = new byte[256];
-        public static string[]  mnemo  = new string[256];
-        public static byte[]    gazmap = new byte[256];
+        public static byte[] map = new byte[256];
+        public static byte[] numap = new byte[256];
+        public static string[] mnemo = new string[256];
+        public static byte[] gazmap = new byte[256];
 
         public static List<string> logR = new List<string>();
         public static List<string> logD = new List<string>();
@@ -27,19 +24,19 @@ namespace GenesisExplorer
         public static byte[] BIN;
         public static int bOffset;
 
-        public static void GenerateOPCODEMapping() 
+        public static void GenerateOPCODEMapping() // garbagge but ok 
         {
-           
+
             for (int i = 0; i < 256; i++)
             {
                 map[i] = 255; // the HLT OPCODE
                 numap[i] = 0;
             }
             string fpath = "vmopcode1.ini";
-            string [] fs = File.ReadAllLines(fpath);
+            string[] fs = File.ReadAllLines(fpath);
             uint opcnt = 0;
             uint tot = 0;
-            foreach ( string s in fs)
+            foreach (string s in fs)
             {
                 string[] fparse = s.Split('-');
                 if (fparse.Length == 3)
@@ -52,10 +49,10 @@ namespace GenesisExplorer
                         byte opc, opb;
                         bool _f;
 
-                         opc = 0;
-                         opb = 0;
+                        opc = 0;
+                        opb = 0;
                         _f = false;
-                        while ( opc < 255)
+                        while (opc < 255)
                         {
 
                             SetBit(7, true, ref opb);
@@ -72,7 +69,7 @@ namespace GenesisExplorer
                             opc++;
                             opb = opc;
                         }
-                        if ( !_f) { MessageBox.Show("shit " + opcnt.ToString()); }
+                        if (!_f) { MessageBox.Show("shit " + opcnt.ToString()); }
 
                         opc = 0;
                         opb = 0;
@@ -211,7 +208,7 @@ namespace GenesisExplorer
                         _f = false;
                         while (opc < 255)
                         {
-                            
+
                             SetBit(7, false, ref opb);
                             SetBit(6, true, ref opb);
                             SetBit(5, true, ref opb);
@@ -227,9 +224,9 @@ namespace GenesisExplorer
                             opb = opc;
                         }
                         if (!_f) { MessageBox.Show("shit " + opcnt.ToString()); }
-                     
+
                     }
-                    if ( bitnum == 2)
+                    if (bitnum == 2)
                     {
 
                         byte opc, opb;
@@ -319,37 +316,37 @@ namespace GenesisExplorer
                         }
                         if (!_f) { MessageBox.Show("shit " + opcnt.ToString()); }
                     }
-                    if ( bitnum == 0)
+                    if (bitnum == 0)
                     {
                         bool _f = false;
                         for (int i = 0; i < 255; i++)
                         {
-                            if ( map[i] == 255)
+                            if (map[i] == 255)
                             {
-                                map[i] =   (byte)opcnt;
+                                map[i] = (byte)opcnt;
                                 numap[i] = 0; // <--- 0 nu map not workin
                                 gazmap[i] = (byte)gas;
                                 _f = true;
                                 break;
                             }
-                        } 
-                        if ( !_f)
+                        }
+                        if (!_f)
                         {
                             MessageBox.Show("shit here"); return;
                         }
                     }
                     // last 3 bits will be equal to 
-                    mnemo[opcnt] = fparse[0].Replace(" ","").ToLower();
+                    mnemo[opcnt] = fparse[0].Replace(" ", "").ToLower();
                     opcnt++;
                 }
 
                 else
                 {
-                   MessageBox.Show("bad parsing " + fparse.Length.ToString());
+                    MessageBox.Show("bad parsing " + fparse.Length.ToString());
                 }
 
             }
-           
+
         }
 
         public static void PrintOPMaps()
@@ -359,7 +356,7 @@ namespace GenesisExplorer
             {
                 mapstr += b.ToString() + ", ";
             }
-            MessageBox.Show( "OPCODE MAP: \r\n" + mapstr);
+            MessageBox.Show("OPCODE MAP: \r\n" + mapstr);
 
             mapstr = "";
             foreach (byte b in numap)
@@ -379,15 +376,25 @@ namespace GenesisExplorer
         {
             public string name { get; set; }
             public int pos { get; set; }
-            public Label(string n, int p)
+            public int spos { get; set; }
+            public bool _subLabel { get; set; }
+
+            public string _mainreference { get; set; }
+            public Label(string n, int p, int strpos, bool _sub, string mainRef = "")
             {
                 this.name = n;
                 this.pos = p;
-         
+                this.spos = strpos;
+                this._subLabel = _sub;
+
+                if (_sub)
+                {
+                    _mainreference = mainRef;
+                }
             }
         }
 
-      
+
         public class Ref
         {
             public int LabelIndex { get; set; }
@@ -395,13 +402,15 @@ namespace GenesisExplorer
             public bool _dsp { get; set; }
             public bool _sib { get; set; }
             public bool change_imm { get; set; }
-            public Ref(int index, int p, bool isImm)
+            public int spos { get; set; }
+            public Ref(int index, int p, bool isImm, int strpos)
             {
                 this.LabelIndex = index;
                 this.Pos = p;
                 this.change_imm = isImm;
                 this._sib = false;
                 this._dsp = false;
+                this.spos = strpos;
 
 
             }
@@ -419,7 +428,7 @@ namespace GenesisExplorer
             int entryindex = -1;
             List<uint> pushOps = new List<uint>();
 
-            foreach ( string s in txt)
+            foreach (string s in txt)
             {
                 if (s.Contains("###"))
                 {
@@ -436,13 +445,13 @@ namespace GenesisExplorer
                 else
                 {
                     uint n = 0;
-                    if ( uint.TryParse(s.Replace(" ", ""), out n) )
+                    if (uint.TryParse(s.Replace(" ", ""), out n))
                     {
                         pushOps.Add(n);
                     }
                 }
             }
-            if ( blocindex == -1)
+            if (blocindex == -1)
             {
                 MessageBox.Show("Bloc index was not declared. Use ### to declare it.");
                 return;
@@ -460,9 +469,9 @@ namespace GenesisExplorer
             //WE NEED TO SIGN now ... 
             MessageBox.Show("[WARNING] This will create a CRT file with blank header. Cannot be mined. Only for testing purpose.");
             List<byte> data = new List<byte>();
-            
+
             // fill blank header
-            for (int  i = 0; i < 81; i ++) // last four bytes are uint of txdata size
+            for (int i = 0; i < 81; i++) // last four bytes are uint of txdata size
             {
                 data.Add(0);
             }
@@ -506,7 +515,7 @@ namespace GenesisExplorer
                     idx = i;
                 }
             }
-            if ( idx == -1) { return; }
+            if (idx == -1) { return; }
             string opcodes = "";
             for (int i = 0; i < map.Length; i++)
             {
@@ -517,7 +526,38 @@ namespace GenesisExplorer
             }
             MessageBox.Show(t + ":" + opcodes);
         }
-        public static void ProccessText(string[] txt, bool _save = false)
+
+        public static void PrintLabelsPosition()
+        {
+            string s = "";
+            foreach (Label l in labels)
+            {
+                s += l.name + " : " + l.pos;
+                if (l._subLabel)
+                {
+                    s += "[" + l._mainreference + "]";
+                }
+                s += "\r\n";
+            }
+            MessageBox.Show(s);
+        }
+        public static void PrintRefInfo()
+        {
+            string s = "";
+            foreach (Ref r in Refs)
+            {
+                s += "[ref info]";
+                s += "\r\n";
+                s += "line#  : " + r.spos;
+                s += "\r\n";
+                s += "labelname : " + labels[r.LabelIndex].name;
+                s += "\r\n";
+                s += "byte pos  : " + r.Pos;
+                s += "\r\n";
+            }
+            MessageBox.Show(s);
+        }
+        public static void ProccessText(string[] txt, bool _save = false, bool _printLog = false)
         {
             // RUN IT TWICE FOR LABEL BECAUSE WE DONT GIVE A SHIT
             labels = new List<Label>();
@@ -527,32 +567,46 @@ namespace GenesisExplorer
             logD = new List<string>();
             Entries = new List<int>();
 
-            
-            
+
+
             // [0] PRE PROCESS LABELS
-            foreach (string s in txt)
+            for (int i = 0; i < txt.Length; i++)
             {
-                PreProcessLabel(s);
+                PreProcessLabel(txt[i], i);
             }
             int entrycount = GetEntryCount(txt);
             // [1] CONVERT
+          
 
             List<byte> binlst = new List<byte>();
-            foreach (string s in txt)
+
+            List<string> LOG = new List<string>();
+            
+            for (int i = 0; i < txt.Length; i++)
             {
-                byte[] B = ConvertLineToBinary(s, entrycount);
+                byte[] B = ConvertLineToBinary(txt[i], entrycount, i);
                 if (B != null)
                 {
                     bOffset += B.Length;
                     AddBytesToList(ref binlst, B);
-                    
+                    if (_printLog)
+                    {
+                        string str = "Proccessing " + txt[i] + ":";
+                        foreach (byte b in B)
+                        {
+                            str += ((int)b).ToString() + " ";
+                        }
+                        LOG.Add(str);
+                    }
+                   
                 }
                 else
                 {
 
-                  //  logD.Add("invalid : " + s);
+                    //  logD.Add("invalid : " + s);
                 }
             }
+            
             string dumpstr = "";
             foreach (byte b in binlst)
             {
@@ -560,41 +614,66 @@ namespace GenesisExplorer
                 dumpstr += "(" + GetByteString(b) + ")";
 
             }
+
             BIN = ListToByteArray(binlst);
+
             // [3] POST PROCESS LABEL
             PostProcessLabel();
+            if (_printLog)
+            {
+                List<string> RAWLOG = new List<string>();
+                string s = " ";
+                int jctr = 0;
+                foreach (byte b in BIN)
+                {
+                    s += ((int)b).ToString() + " ";
+                    jctr++;
+                    if (jctr > 12)
+                    {
+                        RAWLOG.Add(s);
+                        s = "";
+                        jctr = 0;
+                    }
+                }
+                File.WriteAllLines("C:\\Users\\gaelg\\Desktop\\LOG.txt", LOG.ToArray());
+                File.WriteAllLines("C:\\Users\\gaelg\\Desktop\\RAWLOG.txt", RAWLOG.ToArray());
+                
+                PrintRefInfo();
+            }
+            PrintLabelsPosition();
+
             // [4] CONCAT WITH ENTRIES
-            
+
             List<byte> flist = new List<byte>();
             AddBytesToList(ref flist, BitConverter.GetBytes((uint)Entries.Count));
-            foreach ( int i in Entries)
+            foreach (int i in Entries)
             {
                 AddBytesToList(ref flist, BitConverter.GetBytes((uint)i));
             }
-            foreach ( byte b in BIN)
+            foreach (byte b in BIN)
             {
                 flist.Add(b);
             }
             BIN = ListToByteArray(flist);
-           
 
-          
+
+
 
             // [opt.] Print Memory Dump
 
-            
+
             logD.Add(dumpstr);
 
-            if ( _save)
+            if (_save)
             {
                 MessageBox.Show("[WARNING] This will create a CST file with blank header. Cannot be mined. Only for testing purpose.");
                 Stream myStream;
                 SaveFileDialog saveFileDialog1 = new SaveFileDialog();
 
                 List<byte> outb = new List<byte>();
-                for (int i = 0; i < 85; i ++)
+                for (int i = 0; i < 85; i++)
                 {
-                    outb.Add( 0 ) ;
+                    outb.Add(0);
                 }
                 AddBytesToList(ref outb, BIN);
 
@@ -606,7 +685,7 @@ namespace GenesisExplorer
                 {
                     if ((myStream = saveFileDialog1.OpenFile()) != null)
                     {
-                        
+
                         myStream.Write(ListToByteArray(outb), 0, outb.Count);
                         myStream.Close();
                     }
@@ -644,10 +723,10 @@ namespace GenesisExplorer
         }
         public static int DetectFormat(string operand)
         {
-          
+
             int val;
 
-            for (int i = 0; i < operand.Length; i++ )
+            for (int i = 0; i < operand.Length; i++)
             {
                 // does it direct value 
                 if (int.TryParse(operand, out val))
@@ -655,23 +734,23 @@ namespace GenesisExplorer
                     logR.Add("Immediate addressing"); // OK BUT IT IS 4 BYTES OR ONE ???
                     return 0;
                 }
-                
+
                 if (GetReg_REGRM(operand) != null)
                 {
                     logR.Add("Direct Register addressing");
                     return 1;
                 }
-              
+
 
                 // if contains labels or dd : Raw indirect value addressing
                 if (operand.Length >= 3)
                 {
                     if (operand[0] == '[' && operand[operand.Length - 1] == ']')
-                    { 
+                    {
 
                         string ioperand = operand.Substring(1, operand.Length - 2);
 
-                     
+
                         if (GetReg_REGRM(ioperand) != null)
                         {
                             logR.Add("Indirect Register addressing");
@@ -682,10 +761,10 @@ namespace GenesisExplorer
                             logR.Add("Raw indirect value addressing [disp only 32]");
                             return 3;
                         }
-                       
+
                         int Plus = ioperand.IndexOf('+');
                         int Minus = ioperand.IndexOf('-');
-                        if (Minus > -1 && Plus  == -1)
+                        if (Minus > -1 && Plus == -1)
                         {
                             string[] splitmin = ioperand.Split('-');
                             if (splitmin.Length != 2)
@@ -701,32 +780,32 @@ namespace GenesisExplorer
                                 }
                                 else
                                 {
-                                    logR.Add("Indirect + DISP8 addressing" );
+                                    logR.Add("Indirect + DISP8 addressing");
                                     return 5;
                                 }
 
                             }
 
                         }
-                        if ( Plus > -1 && Minus == -1)
+                        if (Plus > -1 && Minus == -1)
                         {
                             // DETECT IF SIB
                             string[] splitplus = ioperand.Split('+');
-                            if ( splitplus.Length != 2)
+                            if (splitplus.Length != 2)
                             {
                                 return -1; //eror
                             }
-                            if ( ContainsRegister(splitplus[0], true)>-1 && ContainsRegister(splitplus[1] , true)>-1)
-                            {
-                                logR.Add("SIB DETECTED"); // !!! 
-                                return 6; 
-                            }
-                            if(ContainsRegister(splitplus[0], true)>-1 && splitplus[0].Contains('*'))
+                            if (ContainsRegister(splitplus[0], true) > -1 && ContainsRegister(splitplus[1], true) > -1)
                             {
                                 logR.Add("SIB DETECTED"); // !!! 
                                 return 6;
                             }
-                            if (ContainsRegister(splitplus[1], true)>-1 && splitplus[1].Contains('*'))
+                            if (ContainsRegister(splitplus[0], true) > -1 && splitplus[0].Contains('*'))
+                            {
+                                logR.Add("SIB DETECTED"); // !!! 
+                                return 6;
+                            }
+                            if (ContainsRegister(splitplus[1], true) > -1 && splitplus[1].Contains('*'))
                             {
                                 logR.Add("SIB DETECTED"); // !!! 
                                 return 6;
@@ -743,8 +822,8 @@ namespace GenesisExplorer
                                     }
                                     else
                                     {
-                                        logR.Add("Indirect + DISP8 addressing" );
-                                        return 8 ;
+                                        logR.Add("Indirect + DISP8 addressing");
+                                        return 8;
                                     }
 
                                 }
@@ -757,8 +836,8 @@ namespace GenesisExplorer
                                     }
                                     else
                                     {
-                                        logR.Add("Indirect + DISP8 addressing" );
-                                        return 10 ;
+                                        logR.Add("Indirect + DISP8 addressing");
+                                        return 10;
                                     }
 
                                 }
@@ -770,13 +849,13 @@ namespace GenesisExplorer
                 }
             }
             return -1; //eror
-            
+
         }
-      
+
         public static int DetectDepth(string operand)
         {
             byte[] RR = GetReg_REGRM(operand);
-            if ( RR != null)
+            if (RR != null)
             {
                 return RR[1];
             }
@@ -797,7 +876,42 @@ namespace GenesisExplorer
         }
 
 
-        public static void PreProcessLabel(string s)
+
+        public static void SortLabelByNameLength()
+        {
+            IEnumerable<Label> query = labels.OrderBy(x => x.name.Length); // x is element i mean it is ok 
+            List<Label> nlabels = new List<Label>();
+            for (int i = query.Count() - 1; i >= 0; i--)
+            {
+                nlabels.Add(query.ElementAt(i));
+            }
+            labels = nlabels;
+        }
+        public static int GetMainLabelFromSubPosition(int subpos)
+        {
+            int result = -1;
+            int bestpos = -1;
+            for (int i = 0; i < labels.Count; i++)
+            {
+                if (labels[i].spos >= subpos)
+                {
+                    break;
+                }
+                if (!labels[i]._subLabel)
+                {
+
+                    if (labels[i].spos > bestpos)
+                    {
+                        result = i;
+                        bestpos = labels[i].spos;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public static void PreProcessLabel(string s, int spos)
         {
             s = s.Replace("\r\n", "");
             s = s.Replace("\r", "");
@@ -806,12 +920,33 @@ namespace GenesisExplorer
             string[] labelsplit = s.Split(':');
             if (labelsplit.Length > 1)
             {
-                labels.Add(new Label(labelsplit[0], bOffset));
-              //  MessageBox.Show("adding " + labelsplit[0].Replace(" ",""));
-               // s = labelsplit[1];
+                if (labelsplit[0][0] == '.')
+                {
+                    // get the closest non sub label near low boff
+                    int mlabel = GetMainLabelFromSubPosition(spos);
+                    if (mlabel > -1)
+                    {
+                        //MessageBox.Show("should reference " + labelsplit[0]+  " : " + labels[mlabel].name );
+                        labelsplit[0] = labelsplit[0].Replace(" ", "");
+                        labels.Add(new Label(labelsplit[0], bOffset, spos, true, labels[mlabel].name));
+                    }
+                    else
+                    {
+                        logR.Add("Cannot found main label from sub label at " + bOffset.ToString());
+                    }
+
+                }
+                else
+                {
+                    labels.Add(new Label(labelsplit[0], bOffset, spos, false));
+                }
+
+                // sort labels by length name 
+                //  MessageBox.Show("adding " + labelsplit[0].Replace(" ",""));
+                // s = labelsplit[1];
 
             }
-            
+
             bool def = false;
             int dpos = -1;
             dpos = s.IndexOf(" dd ");
@@ -841,24 +976,21 @@ namespace GenesisExplorer
             {
                 if (dpos > 0)
                 {
-
                     string sname = s.Substring(0, dpos);
                     sname = sname.Replace(" ", "");
-                    labels.Add(new Label(sname, bOffset));
-                 //   MessageBox.Show("adding def name " + sname);
-
-
+                    labels.Add(new Label(sname, bOffset, spos, false));
+                    // SHOULD I DO SUB REFERENCEMENT FOR DEFINE DATA?
                 }
             }
-
+            SortLabelByNameLength();
         }
 
         public static void PostProcessLabel()
         {
-            foreach ( Ref r in Refs) // ref is always 4 bytes .... 
+            foreach (Ref r in Refs) // ref is always 4 bytes .... 
             {
                 byte[] nval = BitConverter.GetBytes(labels[r.LabelIndex].pos);
-               // logD.Add(labels[r.LabelIndex].name + " offset is " + labels[r.LabelIndex].pos.ToString());
+                // logD.Add(labels[r.LabelIndex].name + " offset is " + labels[r.LabelIndex].pos.ToString());
                 byte modo = 2;
                 if (r._sib)
                 {
@@ -866,11 +998,11 @@ namespace GenesisExplorer
                 }
                 if (!r.change_imm)
                 {
-                   
-                    BIN[r.Pos + modo ]  = nval[0];
-                    BIN[r.Pos + modo+1] = nval[1];
-                    BIN[r.Pos + modo+2] = nval[2];
-                    BIN[r.Pos + modo+3] = nval[3];
+
+                    BIN[r.Pos + modo] = nval[0];
+                    BIN[r.Pos + modo + 1] = nval[1];
+                    BIN[r.Pos + modo + 2] = nval[2];
+                    BIN[r.Pos + modo + 3] = nval[3];
                 }
                 else
                 {
@@ -878,22 +1010,23 @@ namespace GenesisExplorer
                     {
                         modo++;
                     }
+
                     BIN[r.Pos + modo] = nval[0];
                     BIN[r.Pos + modo + 1] = nval[1];
                     BIN[r.Pos + modo + 2] = nval[2];
                     BIN[r.Pos + modo + 3] = nval[3];
                 }
-               
-              
+
+
             }
         }
-        public static byte[] ConvertLineToBinary(string s, int entrycount)
+        public static byte[] ConvertLineToBinary(string s, int entrycount, int spos)
         {
             s = s.Replace("\r\n", "");
             s = s.Replace("\r", "");
             s = s.Split(';')[0];
 
-            if ( s.Length == 0)
+            if (s.Length == 0)
             {
                 return null;
             }
@@ -901,37 +1034,58 @@ namespace GenesisExplorer
 
             // process label
             string[] labelsplit = s.Split(':');
-            if ( labelsplit.Length > 1)
+            if (labelsplit.Length > 1)
             {
-                   // labels.Add(new Label(labelsplit[0], bOffset));
-                  //  MessageBox.Show("adding " + labelsplit[0]);
+
                 foreach (Label l in labels)
                 {
-                    if ( l.name == labelsplit[0].Replace(" ",""))
+                    if (l.name == labelsplit[0].Replace(" ", "")) // here there is trouble .... 
                     {
-                        l.pos = bOffset + 0x5d + 4 + (4*entrycount);
-                        break;
+                        //UPDATE pos if from main label reference...
+                        if (l._subLabel)
+                        {
+                            int mlabel = GetMainLabelFromSubPosition(spos);
+                            if (mlabel > -1)
+                            {
+                                if (l._mainreference == labels[mlabel].name)
+                                {
+                                    l.pos = bOffset + 0x5d + 4 + (4 * entrycount);
+                                    break;
+                                }
+                            }
+
+
+                        }
+                        else
+                        {
+                            l.pos = bOffset + 0x5d + 4 + (4 * entrycount);
+                            break;
+
+                        }
+
                     }
+
+
                 }
                 s = labelsplit[1];
-                
+
             }
             // ________________     Entries     __________________
-            int eindex = s.IndexOf("#"); 
-            if (eindex > -1 )
+            int eindex = s.IndexOf("#");
+            if (eindex > -1)
             {
                 string entry = s.Substring(eindex + 1, s.Length - (eindex + 1));
                 entry = entry.Replace(" ", "");
-                foreach ( Label l in labels)
+                foreach (Label l in labels)
                 {
-                    if ( l.name == entry)
+                    if (l.name == entry)
                     {
                         Entries.Add(l.pos);
                         logD.Add("adding entry at " + l.pos);
                         break;
                     }
                 }
-                
+
             }
 
             // ________________ PROCESS DEFINE __________________
@@ -966,7 +1120,7 @@ namespace GenesisExplorer
                 else
                 {
                     dpos = s.IndexOf(" db ");
-                    if (dpos > -1 )
+                    if (dpos > -1)
                     {
                         def = true;
                         dtype = 8;
@@ -975,18 +1129,19 @@ namespace GenesisExplorer
                 }
 
             }
-           
+
             if (def)
             {
                 if (dpos > 0)
                 {
-
+                    // i dont need to care about subreferencement for define values cause it is not implemented ... 
+                    // do not need to update cause its a definition 
                     string sname = s.Substring(0, dpos);
                     //  labels.Add(new Label(sname, bOffset));
                     //  MessageBox.Show("adding def name " + sname);
                     foreach (Label l in labels)
                     {
-                        if (l.name == sname.Replace(" ",""))
+                        if (l.name == sname.Replace(" ", ""))
                         {
                             l.pos = bOffset + 0x5d + 4 + (4 * entrycount); ;
                             break;
@@ -998,28 +1153,28 @@ namespace GenesisExplorer
 
                 s = s.Substring(dpos + 4, s.Length - (dpos + 4)); // suppress name and dd.
                 string[] splitdef = s.Split(',');
-                if ( splitdef.Length == 1)
+                if (splitdef.Length == 1)
                 {
                     // check if times 
                     int tindex = splitdef[0].IndexOf("times");
                     int times = 0;
                     int value;
-                    if ( tindex > -1 )
+                    if (tindex > -1)
                     {
-                      if (!int.TryParse(splitdef[0].Substring(0, tindex), out value))
-                      {
+                        if (!int.TryParse(splitdef[0].Substring(0, tindex), out value))
+                        {
                             return null;
-                      }
-                      if (!int.TryParse(splitdef[0].Substring(tindex +5 , splitdef[0].Length - 5  - tindex), out times))
-                      {
+                        }
+                        if (!int.TryParse(splitdef[0].Substring(tindex + 5, splitdef[0].Length - 5 - tindex), out times))
+                        {
                             return null;
-                      }
+                        }
 
                         // adding the  fucking byte 
                         List<byte> defbytes = new List<byte>();
                         for (int i = 0; i < times; i++)
                         {
-                            if ( dtype == 8)
+                            if (dtype == 8)
                             {
                                 defbytes.Add((byte)value);
                             }
@@ -1068,7 +1223,7 @@ namespace GenesisExplorer
                         {
                             return null;
                         }
-                       
+
                         if (dtype == 8)
                         {
                             defbytes.Add((byte)value);
@@ -1081,14 +1236,14 @@ namespace GenesisExplorer
                         {
                             AddBytesToList(ref defbytes, BitConverter.GetBytes(value));
                         }
-                       
+
                     }
                     return ListToByteArray(defbytes);
                 }
-                
+
 
             }
-          
+
             // [I.1] GET MNEMONIC OPCODE BYTE
             int ctr = 0;
             foreach (char c in s)
@@ -1116,11 +1271,7 @@ namespace GenesisExplorer
                     break;
                 }
             }
-            if (mnemoid == -1 )
-            {
-                logR.Add("Undefined Mnemonic.");
-                return null;
-            }
+
             int opnum = -1;
             for (int i = 0; i < map.Length; i++)
             {
@@ -1130,7 +1281,7 @@ namespace GenesisExplorer
                     break;
                 }
             }
-            if (opnum == -1 )
+            if (opnum == -1)
             {
                 logR.Add("Undefined Mnemonic.");
                 return null;
@@ -1168,7 +1319,7 @@ namespace GenesisExplorer
                 return null;
 
             }
-           
+
 
             string oprstr = s.Substring(opstr.Length, s.Length - opstr.Length);
             oprstr = oprstr.Replace(" ", "");
@@ -1187,7 +1338,7 @@ namespace GenesisExplorer
             for (int i = 0; i < parser.Length; i++)
             {
                 int r = DetectDepth(parser[i]);
-                if ( r > -1 && r > rsize)
+                if (r > -1 && r > rsize)
                 {
                     rsize = r;
                 }
@@ -1195,62 +1346,102 @@ namespace GenesisExplorer
                 parser[i] = parser[i].Replace("word", "");
                 parser[i] = parser[i].Replace("byte", "");
             }
-            if ( rsize == -1 && parser.Length == 2 )
+            if (rsize == -1 && parser.Length == 2)
             {
                 logR.Add("operand size not detected.");
                 return null;
             }
-            if ( rsize == -1 && parser.Length == 1) // if one operand and ( like push, jmp etc. set it to 32 ) s
+            if (rsize == -1 && parser.Length == 1) // if one operand and ( like push, jmp etc. set it to 32 ) s
             {
-                rsize = 32; 
+                rsize = 32;
             }
-            if ( rsize == 8) // we do not process 16bit mode for the moment
+            if (rsize == 8) // we do not process 16bit mode for the moment
             {
-                rsize = 32; 
+                rsize = 32;
             }
-            if ( rsize > 8)
+            if (rsize > 8)
             {
                 sbit = true;
             }
 
-            // CLEAN DEPTH ARGUMENT
 
-            // DETECT IF 
-            // _______________________    DETECT         FORMAT   ______________________
+
+            //--------------------- replace label name in operands by true values ------------------
+
             int[] opfrmt = new int[parser.Length];
             byte SIB = 255;
             byte[] SIBDSP = null;
             int refcount = 0;
             for (int i = 0; i < parser.Length; i++)
             {
-
-                
-                for (int a = 0; a < labels.Count; a++ ) 
+                // if it contains a point 
+                // PARSE LABEL
+                for (int a = 0; a < labels.Count; a++)
                 {
-                    int search = parser[i].IndexOf(labels[a].name);
-                    if (search > -1)
+
+                    int search = -1;
+                    int pointsearch = parser[i].IndexOf(".");
+                    // does it contains sublabel reference ?
+                    if (pointsearch > -1)
                     {
 
+                        // labels a should be a sublabel and sublabel should reference same mainlabel string
+                        int mlabel = GetMainLabelFromSubPosition(spos);
+
+                        if (mlabel > -1)
+                        {
+                            if (labels[a]._subLabel && labels[a]._mainreference == labels[mlabel].name)
+                            {
+
+                                search = parser[i].IndexOf(labels[a].name);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        search = parser[i].IndexOf(labels[a].name);
+
+                    }
+                    if (search == -1)
+                    {
+                        logR.Add("Cannot found main label from sub label reference at line " + spos);
+                    }
+                    // if it contains a point. do custom search. else 
+
+                    // label should be sorted by name length to avoid conflict
+                    if (search > -1)
+                    {
+                        if (labels[a]._subLabel)
+                        {
+                             MessageBox.Show("line #" + spos.ToString()  + ":" + s+" reference " + labels[a]._mainreference+labels[a].name + " at offset : " + bOffset);
+                        }
+                        else
+                        {
+                             MessageBox.Show("line #" + spos.ToString() + ":" + s + " reference " + labels[a].name + " at offset : " + bOffset);
+                        }
+
+                        // should be exactly the same name label. ( with no include) 
                         // recompose string 
                         string pA = "";
                         string pB = "";
                         pA = parser[i].Substring(0, search);
                         pB = parser[i].Substring(search + labels[a].name.Length, parser[i].Length - (search + labels[a].name.Length));
                         parser[i] = pA + "666" + pB;//s = pA + l.pos.ToString() + pB;
-                       
+
                         // add the ref. 
                         if (parser[i][0] == '[' && parser[i][parser[i].Length - 1] == ']')
                         {
-                            Refs.Add(new Ref(a, bOffset, false));
+                            Refs.Add(new Ref(a, bOffset, false, spos));
                         }
                         else
                         {
-                            Refs.Add(new Ref(a, bOffset, true));
+                            Refs.Add(new Ref(a, bOffset, true, spos));
                         }
                         refcount++;
                         break;
                     }
                 }
+                // _______________________    DETECT         FORMAT   ______________________
                 opfrmt[i] = DetectFormat(parser[i]);
 
                 if (opfrmt[i] == -1)
@@ -1258,29 +1449,30 @@ namespace GenesisExplorer
 
                 if (opfrmt[i] == 0 && i == 0 && opnum == 2) // dont accept imm addr as first operand ??? 
                     return null;
-                if (opfrmt[i]>1 && opfrmt[i] != 6 && refcount > 0)
+                if (opfrmt[i] > 1 && opfrmt[i] != 6 && refcount > 0)
                 {
                     Refs[Refs.Count - 1]._dsp = true;
                 }
+
                 // if 6, build sib byte ....
-                if ( opfrmt[i] == 6 )
+                if (opfrmt[i] == 6)
                 {
                     if (refcount > 0)
                     {
                         Refs[Refs.Count - 1]._sib = true;
                     }
-                    if ( SIB  != 255)
+                    if (SIB != 255)
                     {
                         logR.Add("Error, 2 SIB mode not allowed");
                         return null; // DONT ALLOW 2 SIB
                     }
                     byte[] sr = GETSIB(parser[i]);
-                    if ( sr == null)
+                    if (sr == null)
                     {
                         logR.Add("Error, SIB was null");
                         return null;
                     }
-                    if ( sr.Length == 5)
+                    if (sr.Length == 5)
                     {
                         SIB = sr[0];
                         SIBDSP = new byte[4] { sr[1], sr[2], sr[3], sr[4] };
@@ -1293,31 +1485,31 @@ namespace GenesisExplorer
 
                     logR.Add("SIB : 0x" + SIB.ToString("X"));
                     //PrintByte(SIB);
-                    if ( SIBDSP != null)
+                    if (SIBDSP != null)
                     {
-                        logR.Add("SIB DSP : " + BitConverter.ToInt32(SIBDSP,0).ToString());
+                        logR.Add("SIB DSP : " + BitConverter.ToInt32(SIBDSP, 0).ToString());
                     }
 
                 }
             }
 
-            
-            if ( opfrmt.Length > 1)
+            if (opfrmt.Length > 1)
             {
-                if (opfrmt[0] > 1 && opfrmt[1]>1) // do not  accept 2 indirect addressing ... 
+                if (opfrmt[0] > 1 && opfrmt[1] > 1) // do not  accept 2 indirect addressing ... 
                     return null;
 
-                return Encode((byte)opfrmt[0], (byte)opfrmt[1],  parser[0], parser[1], sbit, SIB, SIBDSP, mnemoid);
+
+                return Encode((byte)opfrmt[0], (byte)opfrmt[1], parser[0], parser[1], sbit, SIB, SIBDSP, mnemoid, spos);
             }
             else
             {
-                return Encode((byte)opfrmt[0], 255, parser[0], "", sbit, SIB, SIBDSP, mnemoid);
+                return Encode((byte)opfrmt[0], 255, parser[0], "", sbit, SIB, SIBDSP, mnemoid, spos);
             }
-            
-            
+
+
         }
 
-        public static  byte[] GETSIB (string operand) // RETURN SIB BYTE && Return SIBDISP 
+        public static byte[] GETSIB(string operand) // RETURN SIB BYTE && Return SIBDISP 
         {
             operand = operand.Substring(1, operand.Length - 2);
             string[] splitplus = operand.Split('+');
@@ -1330,7 +1522,7 @@ namespace GenesisExplorer
                 logR.Add("NO + IN SIB");
                 return null;
             }
-               
+
 
             // CHECK ALL 2 CAN BE PARSE
             byte L = GetReg_SIB(splitplus[0]);
@@ -1342,7 +1534,7 @@ namespace GenesisExplorer
                 SetBit(0, false, ref SIB);
                 SetBit(1, false, ref SIB);
 
-                SetBit(2, IsBitSet(5,L), ref SIB);
+                SetBit(2, IsBitSet(5, L), ref SIB);
                 SetBit(3, IsBitSet(6, L), ref SIB);
                 SetBit(4, IsBitSet(7, L), ref SIB);
 
@@ -1353,21 +1545,21 @@ namespace GenesisExplorer
                 return new byte[1] { SIB };
             }
 
-            
+
             // RETURN IF NO ONE CONTAINES REG
 
-            if (ContainsRegister(splitplus[0], true)==-1 && ContainsRegister(splitplus[1], true)==-1)
+            if (ContainsRegister(splitplus[0], true) == -1 && ContainsRegister(splitplus[1], true) == -1)
             {
                 logR.Add("NO REGISTER IN SIB ");
                 return null;
             }
 
             // CHECK IF ALL 2 CONTAINS REG
-            if ( ContainsRegister(splitplus[0], true)>-1  && ContainsRegister(splitplus[1], true)>-1 )
+            if (ContainsRegister(splitplus[0], true) > -1 && ContainsRegister(splitplus[1], true) > -1)
             {
                 // MEANS BASE IS A REG
                 string isc = "";
-                if ( L != 255)
+                if (L != 255)
                 {
                     SetBit(5, IsBitSet(5, L), ref SIB);
                     SetBit(6, IsBitSet(6, L), ref SIB);
@@ -1385,7 +1577,7 @@ namespace GenesisExplorer
 
                     // GET SCALE AND INDEX in splitplus[0]
                     isc = splitplus[0];
-                    
+
                 }
 
                 string[] splitmul = isc.Split('*');
@@ -1394,7 +1586,7 @@ namespace GenesisExplorer
                     logR.Add("BAD MUL SIZE" + isc);
                     return null;
                 }
-                    
+
 
                 byte LL = GetReg_SIB(splitmul[0]);
                 byte RR = GetReg_SIB(splitmul[1]);
@@ -1404,12 +1596,12 @@ namespace GenesisExplorer
                     logR.Add("NO REGISTER FOUND");
                     return null;
                 }
-                   
+
 
                 // buid index
-                if ( LL != 255)
+                if (LL != 255)
                 {
-                    
+
                     logR.Add("SIB INDEX: " + LL);
                     PrintByte(LL);
                     SetBit(2, IsBitSet(5, LL), ref SIB);
@@ -1424,11 +1616,11 @@ namespace GenesisExplorer
                     SetBit(3, IsBitSet(6, RR), ref SIB);
                     SetBit(4, IsBitSet(7, RR), ref SIB);
                 }
-               
+
                 // build scale 
                 int scale = -1;
 
-                if ( !int.TryParse(splitmul[0], out scale))
+                if (!int.TryParse(splitmul[0], out scale))
                 {
                     if (!int.TryParse(splitmul[1], out scale))
                     {
@@ -1437,9 +1629,9 @@ namespace GenesisExplorer
                     }
                 }
 
-                if ( scale == 1 || scale == 2 || scale == 4 || scale == 8)
+                if (scale == 1 || scale == 2 || scale == 4 || scale == 8)
                 {
-                    switch ( scale)
+                    switch (scale)
                     {
                         case 1:
                             SetBit(0, false, ref SIB);
@@ -1470,10 +1662,10 @@ namespace GenesisExplorer
             }
             string[] splitmul2;
 
-            if ( ContainsRegister(splitplus[0], true) >-1  )
+            if (ContainsRegister(splitplus[0], true) > -1)
             {
                 splitmul2 = splitplus[0].Split('*');
-                if ( splitmul2.Length != 2)
+                if (splitmul2.Length != 2)
                 {
                     return null;
                 }
@@ -1485,10 +1677,11 @@ namespace GenesisExplorer
                 SetBit(6, false, ref SIB);
                 SetBit(7, true, ref SIB);
 
-                if ( !int.TryParse(splitplus[1], out disp32)){
+                if (!int.TryParse(splitplus[1], out disp32))
+                {
                     return null;
                 }
-                if ( !int.TryParse(splitmul2[0], out scale))
+                if (!int.TryParse(splitmul2[0], out scale))
                 {
                     if (!int.TryParse(splitmul2[1], out scale))
                     {
@@ -1503,7 +1696,7 @@ namespace GenesisExplorer
                 }
                 else
                 {
-                     index = GetReg_SIB(splitmul2[1]);
+                    index = GetReg_SIB(splitmul2[1]);
                 }
 
                 if (index == 255)
@@ -1621,12 +1814,12 @@ namespace GenesisExplorer
 
                 return new byte[5] { SIB, dsp[0], dsp[1], dsp[2], dsp[3] }; // revoir l'ordre ... 
             }
-          
+
         }
 
         public static int GetOpcode(int mnemoid, int opsize, bool imm, bool d, bool s)
         {
-            if ( opsize == 1)
+            if (opsize == 1)
             {
                 for (byte i = 0; i < map.Length; i++)
                 {
@@ -1647,13 +1840,13 @@ namespace GenesisExplorer
                 }
 
             }
-           
+
             return -1;
         }
-        
-        public static byte[] Encode(byte t1, byte t2,  string opstr1, string opstr2, bool s, byte SIB, byte[] SIBDISP,int  mnemoid)
+
+        public static byte[] Encode(byte t1, byte t2, string opstr1, string opstr2, bool s, byte SIB, byte[] SIBDISP, int mnemoid, int spos)
         {
-            
+
             // _________ case t0 ____________
             /*
                 op imm
@@ -1665,12 +1858,12 @@ namespace GenesisExplorer
             byte MRR = 0;
             byte opcode = 0;
             byte[] dsp = null;
-            byte[] imm = null ;
+            byte[] imm = null;
 
 
             bool d = false;
 
-            if ( t1 == 0 && t2 == 255 )
+            if (t1 == 0 && t2 == 255)
             {
                 imm = BitConverter.GetBytes(int.Parse(opstr1));
 
@@ -1678,16 +1871,16 @@ namespace GenesisExplorer
                 if (r == -1)
                     return null; //err
                 opcode = (byte)r;
-                
-                return new byte[] { opcode, MRR, imm[0], imm[1], imm[2], imm[3] }; 
+
+                return new byte[] { opcode, MRR, imm[0], imm[1], imm[2], imm[3] };
             }
-            else if ( t1 == 1 && t2 == 255)
+            else if (t1 == 1 && t2 == 255)
             {
                 SetBit(0, true, ref MRR);
                 SetBit(1, true, ref MRR);
 
                 byte rgval = GetReg_REGRM(opstr1)[0];
-                
+
                 SetBit(5, IsBitSet(5, rgval), ref MRR);
                 SetBit(6, IsBitSet(6, rgval), ref MRR);
                 SetBit(7, IsBitSet(7, rgval), ref MRR);
@@ -1695,12 +1888,13 @@ namespace GenesisExplorer
                 int r = GetOpcode(mnemoid, 1, false, d, s);
                 if (r == -1)
                     return null; //err
+
                 opcode = (byte)r;
 
 
-                return new byte[] { opcode, MRR};
+                return new byte[] { opcode, MRR };
             }
-            else if ( t1 == 1 && t2 == 0)
+            else if (t1 == 1 && t2 == 0)
             {
                 SetBit(0, true, ref MRR);
                 SetBit(1, true, ref MRR);
@@ -1719,7 +1913,7 @@ namespace GenesisExplorer
 
                 return new byte[] { opcode, MRR, imm[0], imm[1], imm[2], imm[3] };
             }
-            else if ( t1 == 1 && t2 == 1)
+            else if (t1 == 1 && t2 == 1)
             {
                 // d is 0. so put opstr1 as rm. opstr2 as reg (d0 is reg to rm) (d1 is rm to reg)
                 SetBit(0, true, ref MRR);
@@ -1739,13 +1933,14 @@ namespace GenesisExplorer
                 if (r == -1)
                     return null; //err
                 opcode = (byte)r;
-                return new byte[] { opcode, MRR};
+
+                return new byte[] { opcode, MRR };
             }
 
             // Build R/M bits
             byte rmfrmt = t1;
             string strfrmt = opstr1;
-            if ( t2 > 1 && t2 != 255)
+            if (t2 > 1 && t2 != 255)
             {
                 rmfrmt = t2;
                 strfrmt = opstr2;
@@ -1753,13 +1948,13 @@ namespace GenesisExplorer
                 d = true;
             }
 
-   
+
             // find the correspondant opcode by mnemonic. 
-            if ( t2 == 255)
+            if (t2 == 255)
             {
                 int r = GetOpcode(mnemoid, 1, false, d, s);
                 if (r == -1)
-                    return null ;
+                    return null;
                 opcode = (byte)r;
             }
             else
@@ -1796,7 +1991,7 @@ namespace GenesisExplorer
                     SetBit(0, false, ref MRR);
                     SetBit(1, false, ref MRR);
 
-                    byte rgval = GetReg_REGRM(strfrmt.Substring(1, strfrmt.Length-2))[0];
+                    byte rgval = GetReg_REGRM(strfrmt.Substring(1, strfrmt.Length - 2))[0];
                     logR.Add("RM IS " + rgval);
                     if (IsBitSet(7, rgval))
                     {
@@ -1829,7 +2024,8 @@ namespace GenesisExplorer
                     string[] parser = strp.Split('-');
                     int dsp8 = 0;
                     int regside = 0;
-                    if ( !int.TryParse(parser[1], out dsp8)){
+                    if (!int.TryParse(parser[1], out dsp8))
+                    {
                         int.TryParse(parser[0], out dsp8);
                         regside = 1;
                     }
@@ -1904,7 +2100,7 @@ namespace GenesisExplorer
                     SetBit(7, IsBitSet(7, rgval), ref MRR);
 
                     dsp = BitConverter.GetBytes(dsp32);
-                    
+
                     break;
                 case 6: // SIB          -> mod: 0 0 -> r/m 1 0 0 -> sib -> sibdisp
                     SetBit(0, false, ref MRR);
@@ -1915,14 +2111,14 @@ namespace GenesisExplorer
                     SetBit(7, false, ref MRR);
 
                     //sibdisp if not NULL !! 
-                    
+
                     break;
             }
 
             // BUILD REG IF 2 OPERANDS ( always a reg ) 
-            if (t2 != 255 && t1 != 255 )
+            if (t2 != 255 && t1 != 255)
             {
-                if ( rmfrmt == t2 && t1 != 0)
+                if (rmfrmt == t2 && t1 != 0)
                 {
                     //build from opstr1 
                     byte rgval = GetReg_REGRM(opstr1)[0];
@@ -1931,7 +2127,7 @@ namespace GenesisExplorer
                     SetBit(3, IsBitSet(6, rgval), ref MRR);
                     SetBit(4, IsBitSet(7, rgval), ref MRR);
                 }
-                else if ( t2 != 0)
+                else if (t2 != 0)
                 {
                     //build from opstr2 
                     byte rgval = GetReg_REGRM(opstr2)[0];
@@ -1941,7 +2137,7 @@ namespace GenesisExplorer
                     SetBit(4, IsBitSet(7, rgval), ref MRR);
                 }
             }
-            
+
             //MessageBox.Show("0x"+MRR.ToString("X"));
 
             // case : no SIB | no DISP
@@ -1950,7 +2146,7 @@ namespace GenesisExplorer
             // case : SIB    |    DISP
 
             // this is big shit 
-            if ( SIB == 255 && dsp == null)
+            if (SIB == 255 && dsp == null)
             {
                 return new byte[] { opcode, MRR };
             }
@@ -1968,7 +2164,7 @@ namespace GenesisExplorer
                 {
                     return new byte[] { opcode, MRR, dsp[0], dsp[1], dsp[2], dsp[3] };
                 }
-                
+
             }
             if (SIB != 255 && dsp != null)
             {
@@ -1982,15 +2178,16 @@ namespace GenesisExplorer
                     return new byte[] { opcode, MRR, SIB, dsp[0], dsp[1], dsp[2], dsp[3] };
                 }
             }
+
             return null; // why i need it ????
-            
+
 
         }
 
         public static int ContainsRegister(string s, bool b32only)
         {
             if (s.Contains("eax")) { return 0; }
-            if ( s.Contains("ax") && !b32only) { return 1; }
+            if (s.Contains("ax") && !b32only) { return 1; }
             if (s.Contains("al")) { return 2; }
             if (s.Contains("ah")) { return 3; }
 
@@ -2022,7 +2219,7 @@ namespace GenesisExplorer
             return -1;
         }
 
-        public static byte GetReg_SIB (string  s)
+        public static byte GetReg_SIB(string s)
         {
             switch (s.ToLower())
             {
@@ -2037,24 +2234,24 @@ namespace GenesisExplorer
             return 255;
         }
 
-        public static byte[] GetReg_REGRM( string s)
+        public static byte[] GetReg_REGRM(string s)
         {
-            switch ( s.ToLower())
+            switch (s.ToLower())
             {
-                case "al": return new byte[2] {  0, 8 };
-                case "ax": return new byte[2] {  0, 16 };
+                case "al": return new byte[2] { 0, 8 };
+                case "ax": return new byte[2] { 0, 16 };
                 case "eax": return new byte[2] { 0, 32 };
 
-                case "cl": return new byte[2] {  1, 8 };
-                case "cx": return new byte[2] {  1, 16 };
+                case "cl": return new byte[2] { 1, 8 };
+                case "cx": return new byte[2] { 1, 16 };
                 case "ecx": return new byte[2] { 1, 32 };
 
-                case "dl": return new byte[2] {  2, 8 };
-                case "dx": return new byte[2] {  2, 16 };
+                case "dl": return new byte[2] { 2, 8 };
+                case "dx": return new byte[2] { 2, 16 };
                 case "edx": return new byte[2] { 2, 32 };
 
-                case "bl": return new byte[2] {  3, 8 };
-                case "bx": return new byte[2] {  3, 16 };
+                case "bl": return new byte[2] { 3, 8 };
+                case "bx": return new byte[2] { 3, 16 };
                 case "ebx": return new byte[2] { 3, 32 };
 
                 case "ah": return new byte[2] { 4, 8 };
@@ -2075,7 +2272,7 @@ namespace GenesisExplorer
             }
             return null;
         }
-        
+
         public static string GetByteString(byte b)
         {
             string s = "";
@@ -2097,7 +2294,7 @@ namespace GenesisExplorer
         public static void PrintByte(byte b)
         {
             string s = "";
-            for (int i = 0; i < 8; i ++)
+            for (int i = 0; i < 8; i++)
             {
                 if (IsBitSet(i, b))
                 {
@@ -2108,7 +2305,7 @@ namespace GenesisExplorer
                 {
                     s += "0";
                 }
-                
+
             }
             logR.Add(s);
         }
@@ -2116,11 +2313,11 @@ namespace GenesisExplorer
 
         public static bool IsBitSet(int p, byte b)
         {
-            return (b & (1 << (7-p))) != 0;
+            return (b & (1 << (7 - p))) != 0;
         }
         public static void SetBit(int p, bool val, ref byte b)
         {
-            byte mask = (byte)(1 << (7-p));
+            byte mask = (byte)(1 << (7 - p));
             if (val)
                 b |= mask;
             else
