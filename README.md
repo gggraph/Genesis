@@ -259,7 +259,7 @@ Going further with a basic call and stack mechanism :
           MOV EBP,ESP
           MOV EDX, [EBP+4]
           POP EBP
-          RET 4
+          RETP 4
           
 This asm code will :
 * set register A value to 16
@@ -278,10 +278,10 @@ There is specific instructions related to blockchain contract storage. Here is a
           PUSH EBP
           MOV  EBP, ESP
           XOR  EAX, EAX
-          MOV  ECX, 4
+          MOV  ECX, 1
           MOV  EDX, EBP
           ADD  EDX, 4
-          STF
+          STAD4
           HLT
           
 this code snippet, once being called by a **CRT**, will write 4 bytes contained at the top of the stack, at the begginning of the storage file.
