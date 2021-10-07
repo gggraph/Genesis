@@ -232,7 +232,7 @@ unsigned char * GetBlock(const char *filePath, uint32_t bOff)
 	while (txn > 0)
 	{
 		eOff += 81; // jump to datasize 
-		ReadFile(filePath, eOff, 4, uintbuff); // cause error
+		ReadFile(filePath, eOff, 4, uintbuff);
 		eOff += BytesToUint(uintbuff) + 4;
 		txn--;
 	}

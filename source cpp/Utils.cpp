@@ -32,7 +32,10 @@ void SetBit(int p, bool b, unsigned char * byte)// not working here cause only f
 		*byte &= ~(1UL << (7 - p));
 
 }
-
+bool IsBitSet(int p, unsigned char byte)
+{
+	return (byte >> (7 - p)) & 1U;// not working here 
+}
 void PrintRawBytes(unsigned char* ptr, int length) 
 {
 	std::cout << std::endl;
@@ -41,10 +44,7 @@ void PrintRawBytes(unsigned char* ptr, int length)
 	}
 	std::cout << std::endl;
 }
-bool IsBitSet(int p, unsigned char byte) 
-{
-	return (byte >> (7 - p)) & 1U;// not working here 
-}
+
 
 
 uint32_t BytesToUint(unsigned char *arr)
@@ -78,6 +78,19 @@ bool FileExists(const char * fileName)
 	return _access(fileName, 0) == 0;
 }
 
+bool DeleteFilesWithExtension(const char* dirName, const char* ext) 
+{
+	for (const auto& entry : std::experimental::filesystem::directory_iterator(dirName))
+	{
+		char crtpath[255];
+		strcpy(crtpath, (const char*)(entry.path().string().c_str()));
+		if (strstr(crtpath, ext) != NULL) {
+			remove(crtpath);
+		}
+
+	}
+	return true;
+}
 bool DeleteDirectory(const char * dirName)
 {
 	if (!FileExists(dirName))

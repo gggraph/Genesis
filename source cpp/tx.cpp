@@ -10,7 +10,7 @@ TOU             (4 bytes) +68
 Purishment   	(4 byte ) +72
 Fee             (4 byte ) (reward for miner) +76
 Byte ID         (1 byte ) + 77
-Data Size       (4 bytes)
+Data Size       (4 bytes) +78
 
 [TX data]
 [depends]
@@ -49,7 +49,7 @@ void printSignature(unsigned char* buff)
 
 }
 
-bool IsTransactionValid(unsigned char * TX, uint32_t blockindextime, int * gas, uint32_t blocindex, uint32_t txindex)
+bool IsTransactionValid(unsigned char * TX, uint32_t blockindextime, int * gas, unsigned char * block, uint32_t txindex, const char * filePath)
 {
 	
 	if ( !VerifyHeaderTransaction(TX, blockindextime) )
@@ -58,8 +58,8 @@ bool IsTransactionValid(unsigned char * TX, uint32_t blockindextime, int * gas, 
 	switch (GetTXByteID(TX))
 	{
 		case 0:  return VerifyDFT(TX, blockindextime, gas);
-		case 1:  return VerifyCST(TX, blockindextime, gas, blocindex, txindex);
-		case 2:  return VerifyCRT(TX, blockindextime, gas);
+		case 1:  return VerifyCST(TX, blockindextime, gas, block, txindex);
+		case 2:  return VerifyCRT(TX, blockindextime, gas, block, txindex, filePath);
 	}
 
 	return false; 
@@ -147,14 +147,37 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime, int * gas)
 	UintToBytes(GetUtxoSold(rutxo) + BytesToUint(TXDATA + 1), rutxo + 68);
 	OverWriteVirtualUtxo(sutxo);
 	OverWriteVirtualUtxo(rutxo);
-	
+	*gas += 60;
 	return true;
 
 }
 
-bool VerifyCST(unsigned char * TX, uint32_t blockindextime, int * gas, uint32_t blocindex, uint32_t txindex)
-{	
-	// [0] Verify Sender has suffisant sold to pay the fee
+bool FastApplyEXCH(uint32_t SUTXOP, uint32_t RUTXOP, uint32_t amount, int blockindextime, bool _rev) 
+{
+	unsigned char  sutxo[76];
+	unsigned char  rutxo[76];
+	GetVirtualUtxo(SUTXOP, blockindextime, sutxo);
+	GetVirtualUtxo(RUTXOP, blockindextime, rutxo);
+	if (amount > GetUtxoSold(sutxo)) {
+		std::cout << "EXCH CANNOT BE DONE. INSUFFISANT SOLD." << GetUtxoSold(sutxo);
+		return false;
+	}
+	// update sender sold and tou. update receiver sold.
+
+	UintToBytes(GetUtxoSold(sutxo) - amount, sutxo + 68);
+	UintToBytes(GetUtxoSold(rutxo) + amount, rutxo + 68);
+	OverWriteVirtualUtxo(sutxo);
+	OverWriteVirtualUtxo(rutxo);
+	return true;
+}
+
+bool VerifyCST(unsigned char * TX, uint32_t blockindextime, int * gas, unsigned char * block, uint32_t txindex)
+{	/*
+		entries length (4 bytes)
+		entries        (entries length * 4 )
+		smart contract code (the "real entry")
+	*/
+	// [0] Verify Sender has suffisant sold to pay the fee for the contract submission 
 	unsigned char  sutxo[76];
 	GetVirtualUtxo(BytesToUint(TX), blockindextime, sutxo);
 	uint32_t txfee = GetTXFee(TX);
@@ -163,39 +186,48 @@ bool VerifyCST(unsigned char * TX, uint32_t blockindextime, int * gas, uint32_t 
 		std::cout << "[BLOCK REFUSED] Insuffisant sold in a transaction";  
 		return false;
 	}
-	// [1] Verify CST contract size is not exceeding gas limit ( we write 1 gas per byte write ) we can adjust this later
+	// [?] Verify CST contract size is not exceeding max contract size ( currently 16KO ) 
 	uint32_t dtsize = GetTXDataSize(TX);
-	if (*gas + dtsize * 1 > MAX_GAS_SIZE)
-		return false;
-
-	// [2] Verify CST contract is not over 16ko. 
+	/*
 	if ( dtsize > MAX_CONTRACT_SIZE)
 		return false;
+	*/
+	*gas += 30 + (dtsize)/4;
 
-	// [3] Create Contract Storage ( i need block index and tx index ) 
+	// create the storage 
 	char str[255];
 	unsigned char buffer[8];
-	memcpy(buffer, &blocindex, 4); // bloc index is offset 0 
+	uint32_t bIndex = GetBlockIndex(block);
+	memcpy(buffer, &bIndex, 4); // bloc index is offset 0 
 	memcpy(buffer + 4, &txindex, 4);
 	Sha256.init();
 	Sha256.write((char*)buffer, 8);
 	GetHashString(Sha256.result(), str);
 	std::ostringstream s;
-	s << "sc\\tmp\\" << str; // it is temporary so i need to put it in the sc\tmp folder 
-	std::string ss = s.str();
-	FILE* f = fopen(ss.c_str(), "wb");
-	if (f == NULL) return false; // contract was not created.
+	s << "sc\\" << str;
+	FILE* f = fopen(s.str().c_str(), "ab");
 	fclose(f);
+	// [?] Run Contract first code 
+	int gused = RunCST(TX, dtsize + 85, block, blockindextime, txindex, *gas, true, false);
 
-	// [4] Update gas
-	*gas += dtsize * 1;
+	// [?] If insuffisant gas return false
+	if (!gused) {
+		std::cout << "[BLOCK REFUSED] VM return error. ";
+		
+		remove(s.str().c_str());
 
-	// [3b] Run Contract ?
-	
+		return false;
+	}
+	// [?] Update gas
+	*gas += gused;
+	// UPDATE SOLD AND TOU
+	UintToBytes(GetTXTokenOfUniqueness(TX), sutxo + 64);
+	UintToBytes(GetUtxoSold(sutxo) - txfee, sutxo + 68);
+	OverWriteVirtualUtxo(sutxo);
 	return true;
 }
 
-bool VerifyCRT(unsigned char * TX, uint32_t blockindextime, int * gas)
+bool VerifyCRT(unsigned char* TX, uint32_t blockindextime, int* gas, unsigned char* block, uint32_t txindex, const char * filePath)
 {
 	/*
 	Smart Contract pointer    (8 bytes)
@@ -203,56 +235,64 @@ bool VerifyCRT(unsigned char * TX, uint32_t blockindextime, int * gas)
 	Smart Contract Entry Jump (4 bytes)
 	User Gas Limit            (4 bytes)
 	*/
-	// [0] Verify contract exist
+	// 
 
-	unsigned char * txdata = GetTXData(TX);
+	unsigned char* txdata = GetTXData(TX);
 	uint32_t cbi = BytesToUint(txdata);
 	uint32_t cti = BytesToUint(txdata + 4);
-	// first check if we can get this block.
-	unsigned char * contractbloc = NULL;
-	if (cbi > blockindextime)
-		contractbloc = GetUnofficialBlock("", cbi); // aie i need a file path ;'(
-	else
-		contractbloc = GetOfficialBlock(cbi);
-	if (contractbloc == NULL)
-		return false;
-	if (GetTransactionNumber(contractbloc) + 1 < cti) // i dont know if i need the +1 :: i should verify 
-		return false;
+	unsigned char* contractBlock = NULL;
 	
-	unsigned char * contractTransaction = GetBlockTransaction(contractbloc,cti);
-	if (contractTransaction == NULL)
+	if (cbi > blockindextime) {
+		contractBlock = GetUnofficialBlock(filePath, cbi);
+	}
+	else {
+		contractBlock = GetOfficialBlock(cbi);
+	}
+	if (contractBlock == NULL) {
+		std::cout << "[TX INVALID] Contract Block not exists.";
+		return 0;
+	}
+	if (GetTransactionNumber(contractBlock) + 1 < cti) // i dont know if i need the +1 :: i should verify 
+	{
+		std::cout << "[TX INVALID] Contract Block Transaction not exists.";
+		return 0;
+	}
+	unsigned char* tContract = GetBlockTransaction(contractBlock, cti);
+
+	// verify the sold
+	unsigned char  sutxo[76];
+	GetVirtualUtxo(BytesToUint(TX), blockindextime, sutxo);
+	uint32_t txfee = GetTXFee(TX);
+	if (GetUtxoSold(sutxo) < txfee)
+	{
+		std::cout << "[BLOCK REFUSED] Insuffisant sold in a transaction";
 		return false;
+	}
 
-	// [1] Verify entry exist
-	uint32_t argnum = (GetTXDataSize(TX) - 12) / 4; // every push are 32bit value. thats all .
-	uint32_t entrynum = BytesToUint(txdata + (argnum * 4) + 8); // get the entry in the smartcontract data in the bloc
-	int _guserlimit = BytesToUint(txdata + (argnum * 4) + 12); 
-	unsigned char * contractdata = GetTXData(contractTransaction);
-	if (BytesToUint(contractdata) < entrynum) // bad entry
+	// [?] Verify CST contract size is not exceeding max contract size ( currently 16KO ) 
+	uint32_t dtsize = GetTXDataSize(TX);
+	*gas += 30 + (dtsize) / 4;
+
+	// [?] Run Contract first code 
+	int gused = RunCRT(tContract, GetTXDataSize(tContract) + 85 , TX, GetTXDataSize(TX) + 85 , contractBlock, block, blockindextime, cti, *gas, true, false);
+	
+	free(contractBlock);
+
+	if (!gused) {
+		std::cout << "[BLOCK REFUSED] VM return error. ";
+		
 		return false;
-	uint32_t entrymem = BytesToUint(contractdata + 4 + (entrynum * 4)); // entry mem is update for 0x5d in assembler i guess
+	}
+	// [?] Update gas
+	*gas += gused;
 
-	// [2] Init Virtual Machine ('-')
+	// UPDATE SOLD AND TOU
+	UintToBytes(GetTXTokenOfUniqueness(TX), sutxo + 64);
+	UintToBytes(GetUtxoSold(sutxo) - txfee, sutxo + 68);
+	OverWriteVirtualUtxo(sutxo);
 
-	InitVM(contractdata + 4 + (BytesToUint(contractdata)*4), 
-		GetTXDataSize(contractdata)  - (4 + (BytesToUint(contractdata) * 4)), 
-		entrymem);
-
-	// [3] Push arguments to VM Stack
-	for (int i = 0; i < argnum; i++) 
-		PushArgument(BytesToUint(txdata + (i * 4) + 8));
-
-	// [4] Run
-
-	int rs = RunVM(*gas, _guserlimit);
-	if (!rs)
-		return false;
-
-	// [5] Update Gas
-	*gas += rs;
-
-	free(contractbloc);
 	return true;
+	
 }
 
 bool isSignatureValid(unsigned char * TX)
@@ -438,6 +478,7 @@ bool AddTransactionToPTXFile(unsigned char* TX, int TXSIZE)
 	rewind(f);
 	fwrite(TX, 1, TXSIZE, f);
 	fclose(f);
+	std::cout << "PTX APPENDED" << std::endl;
 
 
 }

@@ -10,6 +10,7 @@
 #include "NetfileManager.h"
 #include "UI.h";
 
+
 /*
 TODO 
 	* 
@@ -24,9 +25,25 @@ unsigned char GENESIS_TARGET[32] =
 	0xC0,0xB,0x4,0x45,0x98,0x90,0xC2,0x7D,
 	0xAC,0x75,0x65,0xBD,0x93,0x5,0xA,0x0
 };
+
+int REGBITMARKET(); int OLDCRTTEST();
+
 int main(int argv, char** args)
 {
-	SayHello();
+	
+	
+	SayHello();	
+	LoadBlockPointers();
+	
+	if (YerOrNo("INIT +  BITMARKET?")) {
+		REGBITMARKET();
+	}
+
+
+
+	//
+	//OLDCRTTEST();
+
 	PrintCommandList();
 	//GetCommand();
 	std::thread cmdthd(GetCommand);
@@ -35,6 +52,255 @@ int main(int argv, char** args)
 
 }
 
+int REGBITMARKET() 
+{
+	Demo();
+	getchar();
+	remove("ptx");
+	unsigned char pukey[64];
+	ReadFile("puk", 0, 64, pukey);
+	unsigned char prKey[32];
+	ReadFile("prk", 0, 32, prKey);
+
+	FILE* f = fopen("CST", "rb");
+	if (f == NULL) { return 0; } // throw error if cannot read
+	fseek(f, 0, SEEK_END);
+	uint32_t lSize = ftell(f);
+	rewind(f);
+
+	// 	   Sign the header and build the header of  the CST is needed here !!!
+	unsigned char* CSTDATA = (unsigned char*)malloc(lSize);
+	fread(CSTDATA, 1, lSize, f);
+	fclose(f);
+
+	// set head data
+	UintToBytes(1, CSTDATA); // UTXOP
+	UintToBytes(2, CSTDATA + 68); // TOU AT +68
+	uint32_t ptime = GetTimeStamp() + 5000;
+	UintToBytes(ptime, CSTDATA + 72); // ts AT +72
+	UintToBytes(0, CSTDATA + 76); // fee AT +76
+	UintToBytes(1, CSTDATA + 80); // TX TYPE  AT +77
+	UintToBytes(lSize - 85, CSTDATA + 81); // TX length  AT +78
+
+
+
+	int ds = GetTXDataSize(CSTDATA);
+	unsigned char* data = (unsigned char*)malloc(21 + ds);
+	memcpy(data, CSTDATA, 4);
+	std::cout << 68 + 17 + ds << std::endl;
+	memcpy(data + 4, CSTDATA + 68, 17 + ds);
+	Sha256.init();
+	Sha256.write((char*)data, 21 + ds); // hash transaction
+	unsigned char hash[32];
+	memcpy(hash, Sha256.result(), 32);
+	free(data); // release heap alloc
+	unsigned char sign[64];
+
+	if (uECC_sign(prKey, hash, 32, sign, uECC_secp256k1())) {
+		std::cout << "DATA transaction successfully signed" << std::endl;
+	}
+	// copy sign at +4
+	memcpy(CSTDATA + 4, sign, 64);
+
+
+
+	// TEST MINING A CST
+	AddTransactionToPTXFile(CSTDATA, lSize); // dont add it exists
+
+	char wblockpath[255];
+	Mine(pukey, 5000, 0, wblockpath);
+
+	// proccess blocks file
+	ProccessBlocksFile(wblockpath);
+	remove("ptx");
+}
+
+
+int OLDCRTTEST() 
+{
+
+
+	/*
+	PrintCommandList();
+	GetCommand();
+	std::thread cmdthd(GetCommand);
+
+	while (1) {}
+	*/
+
+
+	remove("ptx");
+	unsigned char pukey[64];
+	ReadFile("puk", 0, 64, pukey);
+	unsigned char prKey[32];
+	ReadFile("prk", 0, 32, prKey);
+
+
+	// ----------------------
+	// 	   MINE CRT0
+	// ----------------------
+
+	FILE* f = fopen("CRT0", "rb");
+	if (f == NULL) { return 0; } // throw error if cannot read
+	fseek(f, 0, SEEK_END);
+	uint32_t lSize = ftell(f);
+	rewind(f);
+
+	// CONTRACT BLOCK IS AT BLOCK 30 INDEX 0
+	// 	   Sign the header and build the header of  the CST is needed here !!! 
+	unsigned char* CSTDATA = (unsigned char*)malloc(lSize);
+	fread(CSTDATA, 1, lSize, f);
+	fclose(f);
+
+	// set head data
+	UintToBytes(1, CSTDATA); // UTXOP
+	UintToBytes(2, CSTDATA + 68); // TOU AT +68 
+	uint32_t ptime = GetTimeStamp() + 5000;
+	UintToBytes(ptime, CSTDATA + 72); // ts AT +72 
+	UintToBytes(0, CSTDATA + 76); // fee AT +76 
+	UintToBytes(2, CSTDATA + 80); // TX TYPE  IS 2 FOR CRT AT +77 
+	UintToBytes(lSize - 85, CSTDATA + 81); // TX length  AT +78 
+
+	// update also bloc index and tx index is 0 so dont upload and upload max gas 
+	UintToBytes(30, CSTDATA + 85); // bloc 30 
+	UintToBytes(MAX_GAS_SIZE, CSTDATA + lSize - 4); //guser limit 
+
+	int ds = GetTXDataSize(CSTDATA);
+	unsigned char* data = (unsigned char*)malloc(21 + ds);
+	memcpy(data, CSTDATA, 4);
+	std::cout << 68 + 17 + ds << std::endl;
+	memcpy(data + 4, CSTDATA + 68, 17 + ds);
+	Sha256.init();
+	Sha256.write((char*)data, 21 + ds); // hash transaction 
+	unsigned char hash[32];
+	memcpy(hash, Sha256.result(), 32);
+	free(data); // release heap alloc
+	unsigned char sign[64];
+
+	if (uECC_sign(prKey, hash, 32, sign, uECC_secp256k1())) {
+		std::cout << "DATA transaction successfully signed" << std::endl;
+	}
+	// copy sign at +4 
+	memcpy(CSTDATA + 4, sign, 64);
+
+	// TEST MINING A CST 
+	AddTransactionToPTXFile(CSTDATA, lSize); // dont add it exists 
+	char wblockpath[255];
+	Mine(pukey, 5000, 0, wblockpath);
+	ProccessBlocksFile(wblockpath);
+	std::cout << "first CST done " << std::endl;
+	getchar();
+	// ----------------------
+	// 	   MINE CRT77
+	// ----------------------
+	remove("ptx");
+	f = fopen("CRT1", "rb");
+	if (f == NULL) { return 0; } // throw error if cannot read
+	fseek(f, 0, SEEK_END);
+	lSize = ftell(f);
+	rewind(f);
+
+	// CONTRACT BLOCK IS AT BLOCK 30 INDEX 0
+	// 	   Sign the header and build the header of  the CST is needed here !!! 
+	CSTDATA = (unsigned char*)malloc(lSize);
+	fread(CSTDATA, 1, lSize, f);
+	fclose(f);
+
+	// set head data
+	UintToBytes(1, CSTDATA); // UTXOP
+	UintToBytes(2, CSTDATA + 68); // TOU AT +68 
+	ptime = GetTimeStamp() + 5000;
+	UintToBytes(ptime, CSTDATA + 72); // ts AT +72 
+	UintToBytes(0, CSTDATA + 76); // fee AT +76 
+	UintToBytes(2, CSTDATA + 80); // TX TYPE  IS 2 FOR CRT AT +77 
+	UintToBytes(lSize - 85, CSTDATA + 81); // TX length  AT +78 
+
+	// update also bloc index and tx index is 0 so dont upload and upload max gas 
+	UintToBytes(30, CSTDATA + 85); // bloc 30 
+	UintToBytes(MAX_GAS_SIZE, CSTDATA + lSize - 4); //guser limit 
+
+	ds = GetTXDataSize(CSTDATA);
+	data = (unsigned char*)malloc(21 + ds);
+	memcpy(data, CSTDATA, 4);
+	std::cout << 68 + 17 + ds << std::endl;
+	memcpy(data + 4, CSTDATA + 68, 17 + ds);
+	Sha256.init();
+	Sha256.write((char*)data, 21 + ds); // hash transaction 
+	memcpy(hash, Sha256.result(), 32);
+	free(data); // release heap alloc
+
+	if (uECC_sign(prKey, hash, 32, sign, uECC_secp256k1())) {
+		std::cout << "DATA transaction successfully signed" << std::endl;
+	}
+	// getchar();
+	// copy sign at +4 
+	memcpy(CSTDATA + 4, sign, 64);
+
+	// TEST MINING A CST 
+	AddTransactionToPTXFile(CSTDATA, lSize); // dont add it exists 
+
+	// ---------- MINE
+
+	Mine(pukey, 5000, 0, wblockpath);
+	ProccessBlocksFile(wblockpath);
+	std::cout << "NEXT CST done " << std::endl;
+	getchar();
+	//UpdateStatesFromSafeStorage(30, 0);
+
+	while (true) {}
+	//*/
+	/*
+	// ----------------------
+	// 	   MINE A CST IS OK
+	// ----------------------
+	
+	while (true) {}
+	*/
+	/*
+
+
+	*/
+	// auto launch from CST AND CRT
+	f = fopen("CST", "rb");
+	if (f == NULL) { return 0; } // throw error if cannot read
+	fseek(f, 0, SEEK_END);
+	lSize = ftell(f);
+	rewind(f);
+	unsigned char* tContract = (unsigned char*)malloc(lSize);
+	uint32_t cSize = lSize;
+	fread(tContract, 1, lSize, f);
+	fclose(f);
+
+	// ----------------------
+	char fpath[255];
+	bool fload = true;
+	unsigned char* tRequest = NULL;
+	while (true) {
+
+		if (!fload) {
+			free(tRequest);
+		}
+		std::cout << "test other CST : " << std::endl;
+		std::cout << "Type path of a contract request transaction file :" << std::endl;
+		std::cin.getline(fpath, 256);
+
+		f = fopen(fpath, "rb");
+		if (f == NULL) { continue; } // throw error if cannot read
+		fseek(f, 0, SEEK_END);
+		lSize = ftell(f);
+		rewind(f);
+		tRequest = (unsigned char*)malloc(lSize);
+		uint32_t rSize = lSize;
+		fread(tRequest, 1, lSize, f);
+		fclose(f);
+
+		TestContract(tContract, cSize, tRequest, rSize, fload);
+		fload = false;
+	}
+	free(tContract);
+	free(tRequest);
+
+}
 bool GenesisLoop() 
 {
 	// verify files sanity
@@ -159,6 +425,7 @@ bool GenesisLoop()
 	UintToBytes(200, data + 37);
 	PeerSend(0, data, 241);
 	*/
+
 
 
 void Demo() 

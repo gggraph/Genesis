@@ -19,7 +19,7 @@ bool IsBitSet(int p, unsigned char byte);
 uint16_t BytesToShort(unsigned char *arr);
 uint32_t BytesToUint(unsigned char *arr);
 void UintToBytes(uint32_t v, unsigned char *a);
-
+bool DeleteFilesWithExtension(const char* dirName, const char* ext);
 bool DeleteDirectory(const char * dirName);
 bool FileExists(const char * fileName);
 

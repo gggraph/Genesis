@@ -137,9 +137,11 @@ Sha256Class Sha256;
 
 void printHash(unsigned char * buff)
 {
+	unsigned char data[32];
+	memcpy(data, buff, 32);
 	for (int i = 0; i < 32; i++) {
-		std::cout << ("0123456789abcdef"[buff[i] >> 4]);
-		std::cout << ("0123456789abcdef"[buff[i] & 0xf]);
+		std::cout << ("0123456789abcdef"[data[i] >> 4]);
+		std::cout << ("0123456789abcdef"[data[i] & 0xf]);
 	}
 	std::cout << std::endl;
 
@@ -147,10 +149,12 @@ void printHash(unsigned char * buff)
 
 void GetHashString(unsigned char * buff, char * stringbuffer)
 {
+	unsigned char data[32];
+	memcpy(data, buff, 32);
 	std::ostringstream s;
 	for (int i = 0; i < 32; i++) {
-		s << ("0123456789abcdef"[buff[i] >> 4]);
-		s << ("0123456789abcdef"[buff[i] & 0xf]);
+		s << ("0123456789abcdef"[data[i] >> 4]);
+		s << ("0123456789abcdef"[data[i] & 0xf]);
 	}
 	strcpy(stringbuffer, s.str().c_str());
 }

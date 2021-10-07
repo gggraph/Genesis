@@ -100,11 +100,13 @@ void GetCommand()
 			int n = atoi(argstr);
 			LoadBlockPointers();
 			char wblockpath[255];
+			
 			for (int i = 0; i < n; i++) {
+				remove("ptx");
 				Mine(pukey, 5000, utxop, wblockpath);
-				getchar();
+			//	getchar();
 				ProccessBlocksFile(wblockpath);
-				getchar();
+			//	getchar();
 			}
 			
 			

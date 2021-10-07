@@ -1,14 +1,22 @@
 /*
-INSTRUCTIONS A IMPLEMANTER: 
-LIRE LE STORAGE D'AUTRES SMARTCONTRACT.
-LIRE DES BLOCS. ( TXS, ETC. ) LIRE DES UTXOS (ETC.) 
+		HOW TO REVERT INSTRUCTIONS CODE ?
 
+		Because nodes can broadcast list of competitive blocks which includes already validated blocks to another nodes. 
+		Blockchain consensus algorithm should have a way to reverse transactions : downgrade actuality to a previous state of the blockchain data. 
+		When default BTC transaction is quite simple, substracting mining reward and fees to miner sold, substracting amount of transaction to receiver
+		and adding back the amount to the sender, so just a sub becoming an ADD and vis-versa. Reverting contract transaction can be a headache cause it 
+		should allow get back previous state of a contract storage bytes and overwriting process of storage  should  be a two-way function. 
+
+		All we want to have when getting back to previous state of a chain is to get back storage values at a time. So reverting Write instructions. 
+		WRITE AT MEM 6, +8 SHOULD BECOME WRITE AT MEM 6, -8. WRITE AT MEM 16, *2 SHOULD BECOME WRITE AT MEM 16, /2  etc. Every write instructions has to 
+		be sort of constants stored inside CRT that can be read back and negate. 
+		
 */
 
 #include "vm.h"
 #include "tx.h"
 
-#define MEM_SIZE 32000 
+#define MEM_SIZE 1000000 
 
 unsigned char MEM[MEM_SIZE];
 char  storagefPath [250];
@@ -78,20 +86,29 @@ const char SIBID []=
 const char OPMAP[] =
 {
 
-0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 
-3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 
-6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 
-9, 9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10, 11, 11, 12, 12, 11, 11, 12, 
-12, 13, 13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 16, 16, 17, 17, 
-18, 18, 17, 17, 18, 18, 19, 19, 20, 20, 19, 19, 20, 20, 21, 21, 22, 22, 21, 
-21, 22, 22, 23, 23, 24, 24, 23, 23, 24, 24, 25, 25, 26, 26, 25, 25, 26, 26, 
-27, 27, 28, 28, 27, 27, 28, 28, 29, 29, 30, 30, 29, 29, 30, 30, 31, 31, 32, 
-33, 31, 31, 34, 35, 36, 37, 38, 39, 40, 41, 255, 255, 255, 255, 255, 255, 
-255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
-255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
-255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
-255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
-255, 255, 255, 255, 255, 255, 255, 255
+
+0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 
+2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 
+4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 
+6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 
+8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 10, 10, 10, 10, 
+10, 10, 10, 10, 11, 11, 12, 12, 11, 11, 12, 12, 13, 
+13, 14, 14, 13, 13, 14, 14, 15, 15, 16, 16, 15, 15, 
+16, 16, 17, 17, 18, 18, 17, 17, 18, 18, 19, 19, 20, 
+20, 19, 19, 20, 20, 21, 21, 22, 22, 21, 21, 22, 22, 
+23, 23, 24, 24, 23, 23, 24, 24, 25, 25, 26, 26, 25, 
+25, 26, 26, 27, 27, 28, 28, 27, 27, 28, 28, 29, 29, 
+30, 30, 29, 29, 30, 30, 31, 31, 32, 33, 31, 31, 34, 
+35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 
+48, 49, 50, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 
+255, 255, 255, 255, 255, 255, 255,
+
+
 
 };
 
@@ -100,78 +117,50 @@ const char OPMAP[] =
 const char OPNUM[] =
 {
 
-3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
-3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
-3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
-3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
-2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
-2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
-2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
-2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
-0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0,
+
 
 };
 
 const char GASMAP []
 {
 
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 0, 0, 10, 10, 
-0, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
-10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+8, 8, 8, 8, 8, 8, 8, 8, 1, 1, 1, 1, 1, 1, 1, 1, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 
+8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 3, 3, 
+3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+3, 3, 3, 3, 3, 3, 3, 3, 6, 6, 3, 3, 6, 6, 3, 3, 
+4, 4, 4, 4, 4, 4, 4, 4, 10, 10, 6, 3, 10, 10, 24, 
+24, 0, 30, 30, 0, 30, 40, 60, 30, 50, 1, 1, 40, 
+30, 3, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
 
 };
 
-void TestVM() 
-{
-	FILE* f = fopen("C:\\Users\\Gaël\\Pictures\\genesisvm", "rb");
-	
-	if (f == NULL) { return; } // throw error if cannot read
-	fseek(f, 0, SEEK_END);
-	uint32_t lSize = ftell(f);
-	rewind(f);
-
-	unsigned char * fdata = (unsigned char *)malloc(lSize);
-	fread(fdata, 1, lSize, f);
-	
-	// get number of entries 
-	/**/
-	uint32_t entriesnum = BytesToUint(fdata); 
-	if (entriesnum == 0)
-		return; //NO ENTRY IS NOT ALLOWED
-	
-	unsigned char * tdata = (unsigned char *)malloc(lSize - (entriesnum * 4) - 4);
-	memcpy(tdata, fdata + (entriesnum * 4) + 4, lSize - (entriesnum * 4) - 4);
-	InitVM(tdata, lSize - (entriesnum * 4) - 4);
-	
-	RunVM(0, MAX_GAS_SIZE);
-	
-	PrintReg();
-	free(tdata);
-	free(fdata);
-}
-
+//------------------------------ TRASH STUFF
+// UNUSED
 bool LoadContract( uint32_t bIndex, uint32_t TxIndex, bool _newcontract) 
 {
 	// craft & verify storage path 
@@ -194,33 +183,13 @@ bool LoadContract( uint32_t bIndex, uint32_t TxIndex, bool _newcontract)
 	FILE* f = fopen(storagefPath, "rb");
 	if (f == NULL) { return false; } // contract storage not existing 
 
-	// INIT  VM
-	fseek(f, 0, SEEK_END);
-	uint32_t lSize = ftell(f);
-	rewind(f);
-
-	unsigned char * fdata = (unsigned char *)malloc(lSize);
-	fread(fdata, 1, lSize, f);
-
-	// get number of entries 
-	/**/
-	uint32_t entriesnum = BytesToUint(fdata);
-	if (entriesnum == 0)
-		return false; //NO ENTRY IS NOT ALLOWED?
-
-	unsigned char * tdata = (unsigned char *)malloc(lSize  - 4);
-	memcpy(tdata, fdata + (entriesnum * 4) + 4, lSize - 4);
-	InitVM(tdata, lSize  - 4, (entriesnum*4) + 0x5D);
-	free(tdata);
-	free(fdata);
-
-	fclose(f);
-
+	
 
 	return true;
 }
 
-bool InitVM(unsigned char * cs, uint32_t length, uint32_t startaddress)
+//------------------------------
+bool InitVM(unsigned char* cs, uint32_t length, uint32_t startaddress)
 {
 	// Init VM with CS Code
 	// EIP (0X20) is initialize at 0x5d by default
@@ -231,18 +200,8 @@ bool InitVM(unsigned char * cs, uint32_t length, uint32_t startaddress)
 	memcpy(MEM + 0x5D, cs, length);
 	return true;
 }
-
-
-bool RunVMAtPtr(uint32_t memaddr, int gas, int _guserlimit)
-{
-	UintToBytes(memaddr, MEM + 0x20);
-	return RunVM(gas, _guserlimit);
-}
-
-
 bool PushArgument(uint32_t arg)
 {
-	std::cout << "pushing " << arg;
 	unsigned char * t = MEM + 0x10;
 	int * spaddr = (int*)t;
 	*spaddr -= 4;
@@ -250,10 +209,27 @@ bool PushArgument(uint32_t arg)
 	return true;
 }
 
-int TestContract(unsigned char * tContract, uint32_t cSize, unsigned char * tRequest, uint32_t rSize)
-{
-	// Load and test contract . tContract is a CST transaction. tRequest is a CRT transaction.
+/*
+	SOME INFO ABOUT RUNNING CONTRACT CODE AND MACHINE MODE:  
+	- during validation proccess  : 
+		RUN CRT AND CST in SafeMode (storage is in sc/ folder, safestorage is in sc/folder  with .sf extention) . 
+		safestorage contains all informations about state change in real storage path
 	
+	- if blocks series  was valid 
+		ApplyOverwritting to all storage in sc/folder  from all  transformation in relative safestorage path . Also set the new truncate size if needed
+	delete at the end of validation proccess the sc/tmp directory content ... 
+	[ADDITIONNAL INFO] if not valid at VerifyCST. Contract storage in sc/ is deleted.  
+	
+	- during downgrading process : 
+		RUN CRT AND CST in SafeMode
+		revert writing ... ( so if add, do - ), need revN mod enabled.
+		
+
+*/
+int RunCST(unsigned char* tContract, uint32_t cSize, unsigned char * cblock, int blockindextime,  int txindex, int currentgas, bool _safeMode, bool _revMode)
+{
+	
+	// storagefPath is equal to cblock index + tx index hash in sc folder. remove if gas 0 and safemode 1 
 	unsigned char* fdata = (unsigned char*)malloc(cSize);
 	memcpy(fdata, tContract + 85, cSize - 85);
 	// get number of entries 
@@ -270,7 +246,140 @@ int TestContract(unsigned char * tContract, uint32_t cSize, unsigned char * tReq
 	free(tdata);
 	free(fdata);
 
-	// [0] 
+	// BUILD fsotragePath name. 
+	char str[255];
+	unsigned char buffer[8];
+	uint32_t bIndex = GetBlockIndex(cblock);
+	memcpy(buffer, &bIndex, 4); // bloc index is offset 0 
+	memcpy(buffer + 4, &txindex, 4);
+	Sha256.init();
+	Sha256.write((char*)buffer, 8);
+	GetHashString(Sha256.result(), str);
+	std::ostringstream s; 
+	s << "sc\\" << str;
+	strcpy(storagefPath, s.str().c_str());
+
+	
+	// RUN CST code 
+	std::cout << entriesnum << std::endl;
+	uint32_t CSTaddr = 0X5D + 4 + (entriesnum * 4);
+	UintToBytes(CSTaddr, MEM + 0x20);
+	int gused = RunVM(currentgas, MAX_GAS_SIZE, cblock, tContract, blockindextime, _revMode, _safeMode);
+	PrintReg();
+	return gused;
+	
+}
+
+int RunCRT
+    (
+		unsigned char* tContract, uint32_t cSize, unsigned char* tRequest, uint32_t rSize, unsigned char * contractBlock,
+		unsigned char* cblock, int blockindextime, int txindex, int currentgas, bool _safeMode, bool _revMode
+    )
+{
+
+	unsigned char* fdata = (unsigned char*)malloc(cSize);
+	memcpy(fdata, tContract + 85, cSize - 85);
+	// get number of entries 
+	/**/
+	uint32_t entriesnum = BytesToUint(fdata);
+	std::cout << entriesnum;
+	if (entriesnum == 0) {
+		std::cout << "no entry allowed";
+		return 0; //NO ENTRY IS NOT ALLOWED
+	}
+		
+
+	unsigned char* tdata = (unsigned char*)malloc(cSize); // copy cs without entries number
+	memcpy(tdata, fdata, cSize);
+	InitVM(tdata, cSize);
+
+	std::cout << "[VM] Contract successfully loaded." << std::endl;
+	free(tdata);
+	free(fdata);
+
+	// BUILD fsotragePath name. 
+	char str[255];
+	unsigned char buffer[8];
+	uint32_t bIndex = GetBlockIndex(contractBlock);
+	memcpy(buffer, &bIndex, 4); // bloc index is offset 0 
+	memcpy(buffer + 4, &txindex, 4);
+	Sha256.init();
+	Sha256.write((char*)buffer, 8);
+	GetHashString(Sha256.result(), str);
+	std::ostringstream s;
+	s << "sc\\" << str;
+	strcpy(storagefPath, s.str().c_str());
+	std::cout << storagefPath;
+	std::cout << "request size " << rSize;
+	// request is a transaction file. 
+	fdata = (unsigned char*)malloc(rSize);
+	memcpy(fdata, tRequest, rSize);
+	uint32_t txSize = GetTXDataSize(fdata);
+	std::cout << "tx size " << txSize;
+	uint32_t pushNumber = (txSize - 16) / 4;
+	std::cout << "push count : " << pushNumber << std::endl;
+	for (int i = 0; i < pushNumber; i++) {
+		PushArgument(BytesToUint(fdata + 93 + (i * 4)));
+	}
+	// set eip at entry point
+	entriesnum = BytesToUint(MEM + 0x5d);
+	uint32_t entrynumber = BytesToUint(fdata + 93 + (pushNumber * 4));
+	std::cout << "[VM] Entry jump is " << entrynumber << std::endl;
+	// retrieving startaddress is OK.
+	uint32_t startadress = BytesToUint(MEM + 0x5D + 4 + (entrynumber * 4));
+	std::cout << "[VM] Start address  is " << startadress << std::endl;
+
+	// update EIP register
+	UintToBytes(startadress, MEM + 0x20);
+	// RUN
+	uint32_t _gUserLimit = BytesToUint(tRequest + 85 + txSize - 4);
+	std::cout << _gUserLimit;
+	int gused = RunVM(currentgas, _gUserLimit, cblock, tRequest, blockindextime, _revMode, _safeMode);
+	PrintReg();
+	std::cout << "GAS USED : " << gused << std::endl;
+	free(fdata);
+	return gused;
+	
+}
+int TestContract(unsigned char * tContract, uint32_t cSize, unsigned char * tRequest, uint32_t rSize, bool _reloadContract)
+{
+	int lastbi = GetLatestBlockIndex(true);
+	// Load and test contract . tContract is a CST transaction. tRequest is a CRT transaction.
+
+	unsigned char* fdata = (unsigned char*)malloc(cSize);
+	memcpy(fdata, tContract + 85, cSize - 85);
+	// get number of entries 
+	/**/
+	uint32_t entriesnum = BytesToUint(fdata);
+	if (entriesnum == 0)
+		return 0; //NO ENTRY IS NOT ALLOWED
+
+	unsigned char* tdata = (unsigned char*)malloc(cSize); // copy cs without entries number
+	memcpy(tdata, fdata, cSize);
+	InitVM(tdata, cSize);
+
+	std::cout << "[VM] Contract successfully loaded." << std::endl;
+	free(tdata);
+	free(fdata);
+	
+	if (_reloadContract) {
+		// ------------ CREATE TEMPORARY CONTRACT STORAGE ... 
+		remove("teststorage");
+		FILE* f = fopen("teststorage", "wb");
+		if (f == NULL) return false;
+		fclose(f);
+		strcpy(storagefPath, "teststorage");
+		// --------------
+		// 
+		// RUN CST code 
+		std::cout << entriesnum << std::endl;
+		uint32_t CSTaddr = 0X5D + 4 + (entriesnum * 4);
+		UintToBytes(CSTaddr, MEM + 0x20);
+		RunVM(0, MAX_GAS_SIZE, NULL, tContract, lastbi, false, false);
+	}
+	
+	PrintReg();
+
 	/*
 	Smart Contract pointer    (8 bytes)
 		[*] Push  Operations  (4 bytes) -> repeated a specific amount of time determined by validator with data size
@@ -278,11 +387,12 @@ int TestContract(unsigned char * tContract, uint32_t cSize, unsigned char * tReq
 	User Gas Limit            (4 bytes)
 	*/
 
-	PrintReg();
+	
 	// request is a transaction file. 
 	fdata = (unsigned char*)malloc(rSize);
 	memcpy(fdata, tRequest, rSize);
 	uint32_t txSize = GetTXDataSize(fdata);
+	std::cout << "tx size " << txSize;
 	uint32_t pushNumber = (txSize - 16) / 4;
 	std::cout << "push count : " << pushNumber << std::endl;
 	for (int i = 0; i < pushNumber; i++) {
@@ -299,28 +409,316 @@ int TestContract(unsigned char * tContract, uint32_t cSize, unsigned char * tReq
 	// update EIP register
 	UintToBytes( startadress, MEM + 0x20); 
 	// RUN
-	int gused = RunVM(0, MAX_GAS_SIZE, true);
 
+	int gused = RunVM(0, MAX_GAS_SIZE, NULL, tRequest, lastbi, false, false);
+	//PrintRawBytes(MEM, 500);
 	PrintReg();
+	std::cout << "GAS USED : " << gused << std::endl;
+	free(fdata);
 	return gused;
 }
+/*
+	_________Safe Storage Sys_________
+	* storage ptr  (4o)
+	* element size (1o) 
+	* element count(4o)
+	* elements     (element count*elementsize) 
+*/
+
+int ReadSafeStorage(int storageAddr, int memOffset, int elementCount, bool _revMode ) 
+{
+	//std::cout << "try to read " << std::endl;
+	// [0] First read real contract storage. 
+	unsigned char* data = (unsigned char*)malloc(elementCount + 6 ); // 6 is [3+data+3] gaps
+	memset(data, 0, elementCount + 6);
+	FILE* f = fopen(storagefPath, "rb");
+	if (f != NULL) { 
+		fseek(f, 0, SEEK_END);
+		uint32_t lSize = ftell(f);
+		rewind(f);
+		if (storageAddr + elementCount < lSize) {
+			fseek(f, storageAddr, SEEK_SET);
+			fread(data+3, 1, elementCount, f);
+		}
+		fclose(f);
+	}
+	// real storage is storagefPath. safe storage is storagefPath.sf
+	std::ostringstream s;
+	s << storagefPath << ".sf";
+	// [1] Process update from safe storage. 
+	f = fopen(s.str().c_str(), "rb");
+
+	if (f != NULL) 
+	{
+		fseek(f, 0, SEEK_END);
+		uint32_t lSize = ftell(f);
+		rewind(f);
+		int bOff = 4; // first 4 bytes are size expected from STAPP insructions.
+		unsigned char sfHead[9];
+		while (bOff < lSize) {
+			// read storage ptr 
+			fseek(f, bOff, SEEK_SET);
+			fread(sfHead, 1, 9, f);
+			
+			int eCount = BytesToUint(sfHead + 5);
+			unsigned char  eSize = *(sfHead + 4);
+			int stptr = BytesToUint(sfHead);
+			if (stptr < storageAddr + elementCount && stptr + (eCount * eSize) > storageAddr) 
+			{
+				
+				
+				int offsetFromElements = 0; // in bytes // always positive
+				// get nearest highest element include in storageADDR
+				while (stptr + offsetFromElements < storageAddr) {
+					offsetFromElements += (int)eSize;
+				}
+				// is equal to (strptr + offsetFromElements) - storageAddr
+				int offsetFromData = (stptr + offsetFromElements) - storageAddr; // in bytes 
+				
+				int elementsToRewrite = 0;
+				while (stptr + offsetFromElements + (eSize * elementsToRewrite) < storageAddr + elementCount) {
+					elementsToRewrite++;
+				}
+				//std::cout << "Update  unsafe data " << std::endl;
+				//std::cout << "Try reading at " << storageAddr << " " << elementCount << " bytes " << std::endl;
+				/*
+				* int eCount = BytesToUint(sfHead + 5);
+			unsigned char  eSize = *(sfHead + 4);
+			int stptr = BytesToUint(sfHead);
+				*/
+				//std::cout << "This safe instruction has to be proccessed : Write at  " << stptr << " " << eCount << "  times  "<< (int)eSize <<" bytes " << std::endl;
+				//std::cout << "Will proccessed :" << elementsToRewrite << " elements from element number  " << (int)offsetFromElements  << std::endl;
+				//std::cout << "Offset from data demand is  :" << offsetFromData << std::endl;
+
+				
+				fseek(f, bOff + 9 + offsetFromElements, SEEK_SET);
+				unsigned char* safedata = (unsigned char*)malloc(elementsToRewrite *eSize);
+				fread(safedata, eSize, elementsToRewrite, f);
+				
+				PrintRawBytes(safedata, elementsToRewrite* eSize);
+			
+				for (int i = 0; i < elementsToRewrite; i++)
+				{
+					//std::cout << " E SIZE  " << (int)eSize << std::endl;
+					if (eSize == 1) 
+					{
+						data[i + offsetFromData + 3] += safedata[i]; // remember the gap
+						//std::cout << (int)data[i + offsetFromData + 3] << std::endl;
+					}
+					else
+					{
+						
+						int r = BytesToUint(data + (i * 4) + offsetFromData + 3 ) + BytesToUint(safedata + (i * 4)); // remember the gap
+						UintToBytes(r, data + (i * 4) + offsetFromData + 3 ); // remember the gap
+						//std::cout << "apply add :  " << r;
+						
+					}
+				}
+				free(safedata);
+			}
+		
+			bOff += 9 + (eCount*eSize);
+		}
+		fclose(f);
+	}
+
+	// [2] OverWrite VM memory 
+	
+	memcpy( MEM + memOffset, data+3, elementCount); 
+	free(data);
+	
+	return 1;
+}
+/*
+	_________Safe Storage Sys_________
+	* storage ptr  (4o)
+	* element size (1o)
+	* element count(4o)
+	* elements     (element count*elementsize)
+*/
+
+int WriteSafeStorage(int storageAddr, int memOffset, unsigned char elementSize, int elementCount, bool _revMode, bool _Append ) 
+{
+	
+	std::ostringstream s; 
+	s << storagefPath << ".sf";
+	FILE* f = NULL;
+	if (!FileExists(s.str().c_str())) {
+		// create it ...
+		// adding the 4 bytes header 
+		f = fopen(s.str().c_str(), "ab");
+		// get the contract storage current size 
+		FILE* storage = fopen(storagefPath, "rb");
+		fseek(storage, 0, SEEK_END);
+		uint32_t lSize = ftell(storage);
+		//std::cout << "Print storage length " << lSize;
+		fwrite(&lSize, 4, 1, f);
+		fclose(f);
+	}
+	unsigned char uintbuff[4];
+	// set storageAddr ptr from expected size 
+	if (_Append) {
+		f = fopen(s.str().c_str(), "rb");
+		fread(uintbuff, 4, 1, f);
+		storageAddr = BytesToUint(uintbuff);
+		fclose(f);
+	}
+	f = fopen(s.str().c_str(), "ab");
+	//std::cout << "--------------" << std::endl;
+	//std::cout << "storageAddr : " << storageAddr << std::endl;
+	//std::cout << "memOffset : " << memOffset << std::endl;
+	//std::cout << "elementSize : " << (int)elementSize << std::endl;
+	//std::cout << "elementCount : " << elementCount << std::endl;
+	//std::cout << "--------------" << std::endl;
 
 
-int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
+	fwrite(&storageAddr, 1, 4, f);
+	fwrite(&elementSize, 1, 1, f);
+	fwrite(&elementCount, 1, 4, f);
+	fwrite(MEM + memOffset, elementSize, elementCount, f);
+	fclose(f);
+
+	if (_Append) {
+		
+		f = fopen(s.str().c_str(), "r+b"); // set in OVERWRITIING MODE
+		fseek(f, 0, SEEK_SET);
+		fread(uintbuff, 4, 1, f);
+		uint32_t nsize = 0;
+		if (_revMode)
+			nsize = BytesToUint(uintbuff) - elementCount;
+		else 
+			nsize = BytesToUint(uintbuff) + elementCount;
+		fseek(f, 0, SEEK_SET);
+		fwrite(&nsize, 4, 1, f);
+		fclose(f);
+	}
+	
+	return 1;
+}
+
+bool UpdateStatesFromSafeStorage(char * STORAGEPATH)
+{
+
+
+	std::ostringstream s;
+	s << STORAGEPATH;
+	// this is the path of the file 
+	FILE* rStorage = fopen(s.str().c_str(), "r+b");
+	if (rStorage == NULL) {
+		return false;
+	}
+	s << ".sf";
+	FILE* sStorage = fopen(s.str().c_str(), "r+b");
+	if (sStorage == NULL) {
+		return true;
+	}
+
+	unsigned char sfHead[9];
+	fseek(sStorage, 0, SEEK_END);
+	uint32_t lSize = ftell(sStorage);
+	rewind(sStorage);
+	
+	unsigned char uintbuff[4];
+	fread(uintbuff, 1, 4, sStorage);
+	uint32_t sizeExpected= BytesToUint(uintbuff);
+	//std::cout << " s expected = " << sizeExpected << std::endl;
+	int bOff = 4;
+	
+	while (bOff < lSize) 
+	{
+		fseek(sStorage, bOff, SEEK_SET);
+		fread(sfHead, 1, 9, sStorage);
+
+		int stptr = BytesToUint(sfHead);
+		int eCount = BytesToUint(sfHead + 5);
+		unsigned char  eSize = *(sfHead + 4);
+		//std::cout << "stptr" << stptr << std::endl;
+		//std::cout << "element count " << eCount << std::endl;
+		//std::cout << "element size" << (int)eSize << std::endl;
+		
+		fseek(rStorage, stptr, SEEK_SET);
+		if (eSize == 4) 
+		{
+			std::cout << " E SIZE  " << (int)eSize << std::endl;
+			// int version
+			int* data = (int*)malloc(eCount*4);
+			memset(data, 0, eCount * 4);
+			fread(data, 4, eCount, rStorage);
+
+			int* sdata = (int*)malloc(eCount*4);
+			memset(sdata, 0, eCount * 4);
+			fseek(sStorage, bOff + 9, SEEK_SET);
+			fread(sdata, 4, eCount, sStorage);
+
+			for (int i = 0; i < eCount; i++) {
+				data[i] += sdata[i];
+				//std::cout << "Add result : " << data[i] << " sdata is " << sdata[i];
+			}
+			fseek(rStorage, stptr, SEEK_SET);
+			fwrite(data, 4, eCount, rStorage);
+
+			free(data);
+			free(sdata);
+			
+		}
+		else 
+		{
+			//std::cout << " E SIZE  " << (int)eSize << std::endl;
+			// char version
+			unsigned char* data = (unsigned char*)malloc(eCount);
+			memset(data, 0, eCount);
+			fread(data, 1, eCount, rStorage);
+
+			unsigned char* sdata = (unsigned char*)malloc(eCount);
+			memset(sdata, 0, eCount);
+			fseek(sStorage, bOff + 9 , SEEK_SET);
+			fread(sdata, 1, eCount, sStorage);
+
+			for (int i = 0; i < eCount; i++) 
+			{
+				data[i] += sdata[i];
+			}
+			fseek(rStorage, stptr, SEEK_SET);
+			fwrite(data, 1, eCount, rStorage);
+
+			free(data);
+			free(sdata);
+		}
+		bOff += 9 + (eCount * eSize);
+	}
+	// truncate or not the file if needed!
+	fseek(rStorage, 0, SEEK_END);
+	uint32_t cSize = ftell(rStorage);
+	if (cSize > sizeExpected) {
+		// 
+		std::cout << "NEED TRUNCATE THE FILE !!!! " << std::endl;
+		getchar();
+	}
+	fclose(rStorage);
+	fclose(sStorage);
+	return true;
+}
+int RunVM( int gas, int _guserlimit, unsigned char * block, unsigned char * TX, int blockindextime,  bool _revertMode, bool _safeMode) // return gas used.
 {
 
 	/*
 									ISSUE
-
+			*   using 
 			*	SIB MODE + DSP AS BASE IS NOT WORKING
 			*	IMMEDIATE IS ALWAYS 32BIT WE DONT USE D-BIT FOR ASSIGN CONSTANT DEPTH. 
 				WE COULD USE FIRST REG BIT TO IMPLEMENT IT ( CAUSE WE DONT NEED OPCODE EXTENSION)
 			*	MOST OF STUFF DONT IMPLEMENT S-BIT ...
+			* 
+			*   OK. 2 operands 
+			
 		
 	*/
 	int i_gas = gas;
 	int ctrt = 0;
 	FILE* f; 
+
+	bool _RevN = false;
+	bool _RevD = false;
 
 	while (1)
 	{
@@ -331,7 +729,6 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 		int * spaddr = (int*)t;
 
 		uint32_t bl, op_off, mrr_off, sib_off, disp_off, const_off; // [ IMPROVMENT ] SHOULD BE ONLY ONE INC OFFSET USED
-		
 		op_off    = 0; // ++ if prefix
 		mrr_off   = 1; // ++ if prefix
 		sib_off   = 2; // ++ if prefix
@@ -454,7 +851,6 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 					{
 						BASEADDR = MEM + SIBID[base];
 					}
-
 					RMADDR = MEM + BytesToUint(BASEADDR) + (BytesToUint(INDEXADDR)*scale);
 
 				}
@@ -470,7 +866,7 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				// INDIRECT
 				else
 				{
-					// can be either 32b or 8 bit. be carefull of this 
+					// can be either 32b or 8 bit. be carefull of this !!!  
 					RMADDR = MEM + BytesToUint(RMADDR); 
 				}
 				// SIB MOD
@@ -499,6 +895,10 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				// dest : REG, source : R/M
 				addr1 = REGADDR;
 				addr2 = RMADDR;
+				// if op2. addr1 should be always used . changing addr1 depending of d value
+				if (OPNUM[OPCODE] == 2) {
+					addr1 = RMADDR; // always use RM...
+				}
 			}
 			else
 			{
@@ -506,23 +906,23 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				addr2 = REGADDR;
 				addr1 = RMADDR;
 			}
-		
+			
+			
 			
 			if (imm) // imm is always 32bit ....
 			{
+
 				// [the first reg bit should tell if const is one byte or 4 bytes ] 
 
 				addr1 = RMADDR; // does it needed ???--????
 				int   imm32 = BytesToUint(MEM + *(eipaddr)+const_off);//(int)*(MEM + *(MEM + 0x20) + const_off);
-					//std::cout << imm32 << std::endl;
-					// short imm16 = *(MEM + *(MEM + 0x20) + 2); no 16bit mode
 				memcpy(MEM + 0x24, &imm32, 4);
-				// 2 means one operand. 3 means 2 operands. 
 				if (OPNUM[OPCODE] == 2)
 					addr1 = MEM + 0x24;
-				else
-					addr2 = MEM + 0x24; 
-				
+				else {
+					addr2 = MEM + 0x24;
+				}
+					
 				bl += 4;
 
 				/*
@@ -563,23 +963,30 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 		char OPID = OPMAP[OPCODE];
 		// Update EIP before jump functions.
 		
-		// when i inc a int pointer it moves by four
-		// eip addr can be use 
-		
 		*(eipaddr) += bl;
+		
 		gas += GASMAP[OPCODE];
 
 		if (gas >= MAX_GAS_SIZE || gas-i_gas >= _guserlimit) {
+			std::cout << "gas limit reached";
 			return 0;
-		}unsigned char nf = 0;
-		// break if gas is above max
+		}
+		unsigned char nf = 0;
+		//PrintRawBytes(MEM + 0X5D, 300);
+		
+		//std::cout <<"[EIP:" << *eipaddr << "]" << std::endl;
+		//std::cout << "[+" << (int) bl << "]" << std::endl;
 		switch (OPID)
 		{
 			case 0: // ADD 
-				if (s) 
+				if (s) {
 					*(caddr1) += *(caddr2);
-				else
+				}
+				else {
+					
 					*(addr1) += *(addr2);
+				}
+					
 			break; 
 			case 1: // AND 
 				if (s)
@@ -588,8 +995,7 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 					*(addr1) &= *(addr2);
 			break;
 			case 2: // CMP ( it is a substraction and do some stuff ) 
-				// WARNING WE JUST USE 
-				
+				//std::cout << "Comparing " << *(caddr2)<< " with " <<* (caddr1) << std::endl;
 				int res;
 				if (s)
 					res = (uint32_t)*(caddr2)-(uint32_t)*(caddr1);
@@ -600,14 +1006,22 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				{
 					SetBit(0, true, &nf);
 				}
+				else {
+					SetBit(0, false, &nf); // am i ok here ?
+				}
 				if (res == 0 ) //SET ZF
 				{
 					SetBit(6, true, &nf);
+					
+				}
+				else 
+				{
+					SetBit(6, false, &nf);
+					
 				}
 				MEM[0x28] = nf;
 			break;
 			case 3: // MOV
-				//std::cout << "moving to " << (addr1 - MEM) << "from " << (addr2 - MEM)<<  std::endl;
 				if (s)
 					*(caddr1) = *(caddr2);
 				else
@@ -627,15 +1041,15 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				break;
 			case 7: // SHL
 				if (s)
-					*(caddr1) << *(caddr2);
+					*(caddr1) <<= *(caddr2);
 				else
-					*(addr1) << *(addr2);
+					*(addr1) <<= *(addr2);
 				break;
 			case 8: // SHR
 				if (s)
-					*(caddr1) >> *(caddr2);
+					*(caddr1) >>= *(caddr2);
 				else
-					*(addr1) >> *(addr2);
+					*(addr1) >>= *(addr2);
 				break;
 			case 9: // SUB
 				if (s) 
@@ -650,8 +1064,9 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 					*(addr1) ^= *(addr2);
 				break;
 			case 11: // DEC
+				//std::cout << "CALLED DEC" << std::endl;
 				if (s)
-					*caddr1 -= 1; // marche pas car mais le registre en rm 
+					*caddr1 -= 1; 
 				else
 					*addr1 -= 1;
 				break;
@@ -659,9 +1074,9 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				if (s)
 					*caddr1 += 1;
 				else
-					*addr1 += 1;
+					*addr1 += 1 ;
 				break;
-			case 13: // DIV
+			case 13: // DIV (result store in eax) 
 				caddr2 = (int*)MEM;
 				if (s)
 					*(caddr2) = ((uint32_t)*(caddr1)) / ((uint32_t)*(caddr2));
@@ -694,6 +1109,7 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				break;
 
 			case 17: // JMP
+				//std::cout << "CALLED JMP" << std::endl;
 				UintToBytes(*caddr1, MEM + 0x20);
 				break;
 			case 18: // NEG
@@ -712,6 +1128,7 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 			case 20: // JE
 				if (IsBitSet(6, MEM[0x28])) 
 					UintToBytes(*(caddr1), MEM + 0x20);
+				
 				break;
 			case 21: // JA SEEMS INVERT
 				if (!IsBitSet(0, MEM[0x28]) && !IsBitSet(6, MEM[0x28]))
@@ -729,11 +1146,31 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				if (IsBitSet(0, MEM[0x28]))
 					UintToBytes(*(caddr1), MEM + 0x20);
 				break;
-				// same as last four but signed. NOT IMPLEMENTED.
-			case 25: break;
-			case 26: break;
-			case 27: break;
-			case 28: break;
+				
+			case 25: // JZ
+				if (IsBitSet(6, MEM[0x28]))
+					UintToBytes(*caddr1, MEM + 0x20);
+				break; 
+			case 26: // JMR
+				if (_revertMode) {
+					std::cout << "jump cause it is reverse mode" << std::endl;
+					UintToBytes(*caddr1, MEM + 0x20);
+				}
+					
+				break; 
+
+			case 27: // RETP
+				
+				memcpy(eipaddr, MEM + BytesToUint(MEM + 0x10), 4);
+				*spaddr += 4 + *caddr1;
+
+				break; 
+			case 28: // JNE
+				if (!IsBitSet(6, MEM[0x28])) {
+					UintToBytes(*(caddr1), MEM + 0x20);
+				}
+					
+				break; 
 
 			case 29:  // POP 
 				if (s) 
@@ -749,11 +1186,11 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				break; 
 
 			case 30:  // PUSH
-
 				if (s)
 				{
+					
 					*spaddr-=4;
-					 memcpy(MEM + BytesToUint(MEM + 0x10), caddr1, 4);
+					 memcpy(MEM + BytesToUint(MEM + 0x10), addr1, 4);
 				}
 				else
 				{
@@ -762,19 +1199,20 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 				}
 				break;
 			case 31:  // CALL  ( push eip, jmp operand ) 
-				*spaddr -= 4; 
-				*( (int*)MEM + *(MEM + 0x10)) = *(eipaddr);
-				UintToBytes(*(caddr1), MEM + 0x20); 
-
+				
+				* spaddr -= 4;
+				memcpy(MEM + BytesToUint(MEM + 0x10), eipaddr, 4); 
+				UintToBytes(*caddr1, MEM + 0x20);
 				break;
 
 			case 32:  // RET  ( pop eip )
-
-				*eipaddr = *((int*)MEM + *(MEM + 0x10));
+			
+				memcpy(eipaddr, MEM + BytesToUint(MEM + 0x10), 4);
 				*spaddr += 4;
 				break;
-			case 33: // JECXZ 
-				if (BytesToUint(MEM + 0x08) == 0) 
+
+			case 33: // JECXZ // not working because not implemented correctly in opcode ini (need one opcode ) 
+				if ((int)BytesToUint(MEM + 0x08) == 0)
 				{
 					UintToBytes(*(caddr1), MEM + 0x20);
 				}
@@ -828,34 +1266,240 @@ int RunVM(int gas, int _guserlimit, bool _debugMode) // return gas used.
 
 			case 36: // HLT
 				return gas;
-			//	-_-_-_-_-_-_-_-_-_-_-_-_-_ CUSTOM METHOD -_-_-_-_-_-_-_-_-_-_-_-_-_	\\
 
-			case 37: // VFS -> Verify Signature. Not implemented 
-				break;
-			case 38: // SHA -> Compute SHA256. EAX: RAM PTR | ECX: Number Of Bytes | EDX: RAM PTR (hash)
-				Sha256.init();
-				Sha256.write((char*)MEM + BytesToUint(MEM), BytesToUint(MEM+0x08));
-				memcpy(MEM + BytesToUint(MEM + 0x0C), Sha256.result(), 32);
-				break;
+				/*
+							SPECIFIC BC INSTRUCTION
 
-			case 39: // RSA?
-				break;
-			case 40: // LDF -> Load  Contract storage. EAX: FILE PTR | ECX: Number Of Bytes | EDX: RAM PTR
-				f = fopen(storagefPath, "rb");
-				if (f == NULL) { return 0; } 
-				fseek(f, BytesToUint(MEM), SEEK_SET);
-				fread(MEM + BytesToUint(MEM + 0x0C), 1, BytesToUint(MEM + 0x08), f);
+							* [LSC] LOAD SMARTCONTRACT FROM ANOTHER BLOCK AT A GIVEN ADDR [EAX: block index - EBX: tx index - EDX: VM ADDR   ]
+							* [RSC] RUN A SMARTCONTRACT ENTRIES FROM A GIVEN ADDR [EAX: CS ADDR - EBX: PUSH OPS SP FORMAT ADDR  ] ( CHANGING OR NOT STORAGEFPATH )
+							* [XBT *] GET TIMESTAMP OF A GIVEN BLOCK [EAX: block index. stored in EDX ]
+							* [XBI] GET CURRENT BLOCK INDEX          [returned in EAX]
+							* [CBT] GET CURRENT BLOCK TIMESTAMP      [returned in EAX]
+							* [GAS * ] GET CURRENT GAS USED          [returned in EAX]
+							* [SLD] GET SOLD OF A CRT KEY            [returned in EAX]
+							* [USL] UPDATE SOLD OF CURRENT CRT KEY or CST creator KEY
+							* [LSD] LOAD CONTRACT STORAGE DATA
+							* [LOS] LOAD OTHER SC CONTRACT STORAGE
+							* [SIG] VERIFY SIGN FROM MEM ADDR
+							* [HSH] HASH DATA FROM MEM ADDR
+							* 
+							*  ------- applied
+							* [STAPP] APPEND    BYTES VALUES IN STORAGE [ EAX : MEM PTR. ECX : count]
+							* [STADD] INCREMENT BYTES VALUES IN STORAGE [ EAX : MEM PTR. ECX : count. EDX : STOR PTR]
+							* [STAD4] INCREMENT UINT  VALUES IN STORAGE [ EAX : MEM PTR. ECX : count. EDX : STOR PTR]
+							* [HASH ] HASH DATA                         [ EAX : MEM PTR. ECX : count. EDX : DEST PTR]
+							* [SIGN ] VERIFY SECP256K1 SIGNATURE        [ EAX : HASH. EBX : PUKEY . EDX : sign. -update zero flag] - sign has to be hash 
+							* [STRDB] READ BYTES FROM STORAGE           [ EAX : STOR PTR. ECX : count. EDX : MEM PTR ]
+							* [EXCH ] Money transfer                    [ EAX : SUTXOP.   ECX : amount. EDX: RUTXOP - update zero flag ]
+							* [TXKEY] Get current transaction Public Key[ EDX : DEST PTR] 
+							* [CLOCK] Get current block time stamp      [ stored in eax] 
+				*/
+
+			case 37 :  // STAPP [ EAX: MEMADDR, ECX: byte count ]
+				//EDX is not used here 
+				//std::cout << "will append " << (int)BytesToUint(MEM + 0x08) << "bytes from " << (int)BytesToUint(MEM + 0x00) << "ADDR"  << std::endl;
+				
+				if (_safeMode)
+				{
+				
+					WriteSafeStorage(-1, (int)BytesToUint(MEM + 0x00), 1, (int)BytesToUint(MEM + 0x08), _RevN, true);
+					gas += (int)BytesToUint(MEM + 0x08);
+					break;
+				}
+				uint32_t lSize;
+				f = fopen(storagefPath, "ab");
+				if (f == NULL) return 0;
+				fseek(f, 0, SEEK_END);
+		
+				lSize = ftell(f);
+
+				fwrite(MEM + (int)BytesToUint(MEM), sizeof(unsigned char), (int)BytesToUint(MEM+0x08), f);
 				fclose(f);
+				gas += (int)BytesToUint(MEM + 0x08);
+				break; 
+			case 38:   // STADD [ EAX: MEMADDR, ECX: byte count, EDX: STORAGEADDR ]
+			//	std::cout << "will STORE " << (int)BytesToUint(MEM + 0x08) << "bytes from " << (int)BytesToUint(MEM + 0x00) << "ADDR" << " to " << (int)BytesToUint(MEM + 0x0C) 
+			//		<< " offset " << std::endl;
+				if (_safeMode) 
+				{
+					WriteSafeStorage((int)BytesToUint(MEM + 0x0C), (int)BytesToUint(MEM + 0x00), 1, (int)BytesToUint(MEM + 0x08), _RevN, false);
+					gas += (int)BytesToUint(MEM + 0x08);
+					break;
+				}
+				f = fopen(storagefPath, "r+b");
+				if (f == NULL) return 0 ;
+				fseek(f, (int)BytesToUint(MEM + 0x0C), SEEK_SET);
+				unsigned char* fbuffer;
+				fbuffer = (unsigned char*)malloc((int)BytesToUint(MEM + 0x08));
+				fread(fbuffer, 1, (int)BytesToUint(MEM + 0x08), f);
+				// update buffer 
+				for (int i = 0; i < (int)*(MEM + 0x08); i++) {
+					if (_RevN) 
+						fbuffer[i] -= *(MEM + (int)BytesToUint(MEM + 0x00) + i);
+					else {
+						fbuffer[i] += *(MEM + (int)BytesToUint(MEM + 0x00) + i);
+					}
+						
+					
+				}
+				// re-seek and append array
+				fseek(f, (int)BytesToUint(MEM + 0x0C), SEEK_SET);
+				fwrite(fbuffer, 1, (int)BytesToUint(MEM + 0x08), f);
+				free(fbuffer);
+				fclose(f);
+				gas += (int)BytesToUint(MEM + 0x08);
 				break;
-			case 41: // STF -> Store Contract storage. EAX: FILE PTR | ECX: Number Of Bytes | EDX: RAM PTR
-			std::cout << "Write storage at offset " << BytesToUint(MEM + 0x08) << ", " 
-				<< BytesToUint(MEM + 0x08) << " bytes from virtual memory " << BytesToUint(MEM + 0x0C)
-				<< std::endl;
+			case 39: // ERR
+				std::cout << "vm return error opcode" << std::endl;
+				return 0;
+			case 40: // STAD4
+				//	std::cout << "will STORE " << (int)BytesToUint(MEM + 0x08) << "integers from " << (int)BytesToUint(MEM + 0x00) << "ADDR" << " to " << (int)BytesToUint(MEM + 0x0C) 
+				//	<< " offset " << std::endl;
+				if (_safeMode)
+				{
+					WriteSafeStorage((int)BytesToUint(MEM + 0x0C), (int)BytesToUint(MEM + 0x00), 4, (int)BytesToUint(MEM + 0x08), _RevN, false);
+					gas += (int)BytesToUint(MEM + 0x08) * 4;
+					break;
+				}
 				f = fopen(storagefPath, "r+b");
 				if (f == NULL) return 0;
-				fseek(f, BytesToUint(MEM), SEEK_SET);
-				fwrite(MEM + BytesToUint(MEM + 0x0C), 1, BytesToUint(MEM + 0x08), f);
+				fseek(f, (int)BytesToUint(MEM + 0x0C), SEEK_SET);
+				int* fbufferB;
+				fbufferB = (int*)malloc((int)BytesToUint(MEM + 0x08) * 4);
+				fread(fbufferB, 4, (int)BytesToUint(MEM + 0x08), f);
+				// update buffer 
+				for (int i = 0; i < (int)*(MEM + 0x08); i++) 
+				{
+					if (_RevN)
+						fbufferB[i] -= BytesToUint(MEM + (int)BytesToUint(MEM + 0x00) + (i*4));
+					else {
+						fbufferB[i] += BytesToUint(MEM + (int)BytesToUint(MEM + 0x00) + (i*4));
+					}
+				}
+				// re-seek and append array
+				fseek(f, (int)BytesToUint(MEM + 0x0C), SEEK_SET);
+				fwrite(fbufferB, 4, (int)BytesToUint(MEM + 0x08), f);
+				
+				free(fbufferB);
 				fclose(f);
+				gas += (int)BytesToUint(MEM + 0x08) * 4;
+				break; 
+			case 41: // HASH [ EAX : MEM PTR. ECX : count. EDX : DEST PTR]
+				//std::cout << "will hash " << (int)BytesToUint(MEM + 0x08) << "bytes from " << (int)BytesToUint(MEM + 0x00) << "ADDR" << " to MEM+" << (int)BytesToUint(MEM + 0x0C) 
+				//	<< " address " << std::endl;
+				Sha256.init();
+				Sha256.write((char*) (MEM + BytesToUint(MEM + 0x00) ) , (int)BytesToUint(MEM + 0x08));
+				memcpy((unsigned char*)(MEM + BytesToUint(MEM + 0x0C)), Sha256.result(), 32); // COPY result of hash to MEM+0x0C
+				gas += (int)BytesToUint(MEM + 0x08); 
+				break;
+			case 42: // SIGN [ EAX : HASH. EBX : PUKEY . EDX : sign. -update zero flag] - sign has to be hash
+				/*
+				std::cout << "HASH" << std::endl;
+				PrintRawBytes(MEM + BytesToUint(MEM + 0x00), 32);
+				std::cout << "PUK" << std::endl;
+				PrintRawBytes(MEM + BytesToUint(MEM + 0x04), 64);
+				std::cout << "SIGN" << std::endl;
+				PrintRawBytes(MEM + BytesToUint(MEM + 0x0C), 64);
+				*/
+				if (uECC_verify(MEM + BytesToUint(MEM + 0x04), (MEM + BytesToUint(MEM + 0x00)), 32, MEM + BytesToUint(MEM + 0x0C), uECC_secp256k1()) == 1) {
+					SetBit(6, false, MEM + 0x28);
+					std::cout << "sign was valid " << std::endl;
+				}
+				else 
+				{
+					SetBit(6, true, MEM + 0x28);
+					std::cout << "sign was not valid " << std::endl;
+				}
+				break;
+			case 43: // STRDB [ EAX : STOR PTR. ECX : count. EDX : MEM PTR ]
+				//std::cout << "will READ " << (int)BytesToUint(MEM + 0x08) << "bytes from " << (int)BytesToUint(MEM + 0x00) << "ADDR" << " to " << (int)BytesToUint(MEM + 0x0C) 
+				//	<< " offset " << std::endl;
+				if (_safeMode) {
+					ReadSafeStorage((int)BytesToUint(MEM + 0x00), (int)BytesToUint(MEM + 0x0C), (int)BytesToUint(MEM + 0x08), _RevN);
+					gas += (int)BytesToUint(MEM + 0x08);
+					break;
+				}
+				f = fopen(storagefPath, "rb");
+				if (f == NULL) return 0;
+				fseek(f, (int)BytesToUint(MEM + 0x00), SEEK_SET);
+				fread( MEM+(int)BytesToUint(MEM+0x0C), 1, (int)BytesToUint(MEM + 0x08), f);
+				fclose(f);
+				gas += (int)BytesToUint(MEM + 0x08);
+				break;
+			case 44: // EXCH [ EAX : SUTXOP.   ECX : amount. EDX: RUTXOP - update zero flag ] rutxop should not be 0. 
+				// there will be specific cond here this can be revert if _revn is set 
+				if (FastApplyEXCH(BytesToUint(MEM + 0x00), BytesToUint(MEM + 0x0C), BytesToUint(MEM + 0x08), blockindextime, _RevN)) {
+					SetBit(6, false, MEM + 0x28);
+				}
+				else {
+					SetBit(6, true, MEM + 0x28);
+				}
+				break;
+			case 45: // REVD
+				if (_revertMode)
+					_RevD = !_RevD;
+				break;
+			case 46: // REVN
+				if (_revertMode) 
+					_RevN = !_RevN;
+				break;
+			case 47: // TXKEY (move current transaction key at dest specified by EDX) 
+
+				unsigned char utxo[76];
+				if (_safeMode) {
+					GetVirtualUtxo(BytesToUint(TX), blockindextime, utxo);
+					memcpy(MEM + BytesToUint(MEM + 0x0C), GetUtxoPuKey(utxo), 64);
+				}
+				else {
+					
+					GetUtxo(BytesToUint(TX), utxo);
+					memcpy(MEM + BytesToUint(MEM + 0x0C), GetUtxoPuKey(utxo), 64);
+				}
+				break;
+			case 48: // STLEN (return contract size in EAX) APPLY SAFE STORAGE 
+				f = fopen(storagefPath, "rb");
+				if (f == NULL) { return 0; } // throw error if cannot read
+				fseek(f, 0, SEEK_END);
+				lSize = ftell(f);
+				fclose(f);
+
+				if (_safeMode) {
+					// TODO
+					std::ostringstream s;
+					s.str("");
+					s << storagefPath << ".sf"; 
+					f = fopen(s.str().c_str(), "rb");
+					if (f != NULL) //{ return 0; }
+					{
+						fread(utxo, 4, 1, f);// use utxo hack 
+						memcpy(MEM, utxo, 4);
+						fclose(f);
+					}
+					else {
+						memcpy(MEM, &lSize, 4);
+						break;
+					}
+					
+				}
+				else {
+					
+					memcpy(MEM, &lSize, 4);
+					break;
+				}
+				break;
+			case 49 : // CLOCK
+				memcpy(MEM, block + 68, 4);
+				break;
+			case 50: // UTXO [ mem cpy utxo data from eax utxop to edx dest ] 
+				if (_safeMode) {
+					GetVirtualUtxo(BytesToUint(MEM + BytesToUint(MEM + 0x00)), blockindextime, utxo);
+					memcpy(MEM + BytesToUint(MEM + 0x0C), GetUtxoPuKey(utxo), 64);
+				}
+				else {
+					GetUtxo(BytesToUint(MEM + BytesToUint(MEM + 0x00)), utxo);
+					memcmp(MEM + BytesToUint(MEM + 0x0cC), utxo, 72);
+				}
+				
 				break;
 		}
 		ctrt++;
@@ -890,7 +1534,8 @@ void PrintReg()
 	std::cout << "EBX : " << (int)BytesToUint(MEM + 0x04) << std::endl;
 	std::cout << "ECX : " << (int)BytesToUint(MEM + 0x08) << std::endl;
 	std::cout << "EDX : " << (int)BytesToUint(MEM + 0x0C) << std::endl;
-
+	std::cout << "ESI : " << (int)BytesToUint(MEM + 0x18) << std::endl;
+	std::cout << "EDI : " << (int)BytesToUint(MEM + 0x1C) << std::endl;
 	std::cout << "EBP : " << (int)BytesToUint(MEM + 0x14) << std::endl;
 	std::cout << "ESP : " << (int)BytesToUint(MEM + 0x10) << std::endl;
 

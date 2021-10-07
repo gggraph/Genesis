@@ -1,5 +1,14 @@
 #include "utxo.h"
 #include "consensus.h"
+
+/*
+	VIRTUAL UTXO SET STRUCT : 
+	UTXOP
+	- TOU DATA -
+	PUKEY
+	TOU
+	SOLD
+*/
 /*
 UTXO STRUCT  :  (72) or (76 virtual) / before it was 540 or 544
 PUKEY      64 B
@@ -7,6 +16,7 @@ TOU        4  B
 SOLD       4  B
 VPTR       4  B ( only on virtual UTXO ) 
 */
+
 
 void PrintUTXO(unsigned char* UTXO) 
 {
@@ -115,11 +125,9 @@ void GetUtxo(uint32_t index, unsigned char * buff) // have to arg a buff pointer
 	fread(buff, 1, 72, f);
 	fclose(f);
 }
-
-void GetVirtualUtxoInTempFile(unsigned char * buff, uint32_t index, unsigned char * puKey )  // give me big shit 
-// Reading tmp file until we found virutal utxo.  
+void GetVirtualUtxoInTempFile(unsigned char* buff, uint32_t index, unsigned char* puKey) 
 {
-	FILE* f = fopen("utxos\\tmp", "rb"); 
+	FILE* f = fopen("utxos\\tmp", "rb");
 	if (f == NULL) { return; } // throw error if cannot read
 	// obtain file size:
 	fseek(f, 0, SEEK_END);
@@ -127,42 +135,43 @@ void GetVirtualUtxoInTempFile(unsigned char * buff, uint32_t index, unsigned cha
 	rewind(f);
 	uint32_t boff = 0;
 	uint32_t vIndex = 0;
-	while (boff < lSize) 
+	while (boff < lSize)
 	{
-		unsigned char fdata[72]; 
-		if ( index == 0 )
+		unsigned char fdata[72];
+		if (!index) // if index is null. UTXOP is not referenced in virtual utxo set.  so search by comparing puKey
 		{
-			fseek(f, boff+4, SEEK_SET);
-			fread(fdata, 1, 72, f);
+			fseek(f, boff + 4, SEEK_SET); // JUMP TO VUTXO KEY
+			fread(fdata, 1, 72, f); // read vutxo data
+			// compare hash. if equal returns. 
 			if (memcmp(puKey, fdata, 64) == 0)
 			{
 				memcpy(buff, fdata, 72);
-				UintToBytes(vIndex, buff + 72); // add virtual set index
+				UintToBytes(vIndex, buff + 72); // add the VPTR here 
 				fclose(f);
 				return;
 			}
+
 		}
 		else
 		{
-			fseek(f, boff, SEEK_SET);
-			fread(fdata, 1, 4, f);
-			if ( BytesToUint(fdata) == index )
+			fseek(f, boff, SEEK_SET); // JUMP TO VUTXO KEY
+			fread(fdata, 1, 4, f); // read vutxo index
+			if (BytesToUint(fdata) == index)
 			{
-				fseek(f, boff+4, SEEK_SET);
+				fseek(f, boff + 4, SEEK_SET);
 				fread(buff, 1, 72, f);
 				UintToBytes(vIndex, buff + 72); // add virtual set index
 				fclose(f);
 				return;
 			}
 		}
-
-		boff += 76;
-	 	vIndex++;
+		boff += 76; 
+		vIndex++;
 	}
 	fclose(f);
-	std::cout << "RETURNING NULLIFY POINTER";
 	return;
 }
+
 
 void GetVirtualUtxo(uint32_t utxop, uint32_t blockindextime, unsigned char * rvUtxo, unsigned char * nUtxo)
 // Everything start here : 
@@ -213,7 +222,7 @@ void GetVirtualUtxo(uint32_t utxop, uint32_t blockindextime, unsigned char * rvU
 	}
 	else
 	{
-		if (nUtxo == NULL) // ok here can we can send a null pointer
+		if (isUtxoNull(nUtxo)) // ok here can we can send a null pointer
 		{
 			std::cout << "fatal error : no utxo provide ... ." << std::endl; 
 			while (1){}
@@ -417,7 +426,7 @@ void OverWriteVirtualUtxo(unsigned char * nUtxo)
 {
 	uint32_t boff = GetVirtualUtxoOffset(nUtxo) * 76;
 	std::cout << "OVERWRITING TOU:" << BytesToUint(nUtxo + 64) << " SOLD: " << BytesToUint(nUtxo + 68) <<  " at " << boff <<std::endl;
-	OverWriteFile("utxos\\tmp", boff + 4 , nUtxo, 72); // don't overwrite header so offset 4 bytes
+	OverWriteFile("utxos\\tmp", boff + 4 , nUtxo, 72); // don't overwrite utxo index so offset 4 bytes
 }
 
 

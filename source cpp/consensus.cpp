@@ -2,9 +2,11 @@
 #include "sha256.h"
 #include "arith256.h"
 #include <chrono>
+#include "vm.h"
 
 void ProccessBlocksFile(const char * filePath)
 {
+	uint32_t lastOfficialindex = 0; 
 	// create virtual utxo set 
 	FILE* f = fopen("utxos\\tmp", "ab");
 	if (f == NULL)
@@ -14,7 +16,7 @@ void ProccessBlocksFile(const char * filePath)
 	fclose(f);
 
 
-	uint32_t lastOfficialindex = GetLatestBlockIndex(true);
+	lastOfficialindex = GetLatestBlockIndex(true);
 	// firstindex . lastindex.  blocksptr (4o) . data
 	unsigned char buff[8];
 	ReadFile(filePath, 0, 8, buff);
@@ -26,6 +28,9 @@ void ProccessBlocksFile(const char * filePath)
 	{
 		// clear temp file
 		remove("utxos\\tmp");
+		// clear _sf storage file 
+		DeleteFilesWithExtension("sc", ".sf");
+		// clear block file
 		remove(filePath);
 	}
 	else
@@ -36,8 +41,24 @@ void ProccessBlocksFile(const char * filePath)
 			//update the chain...
 			// IT IS A WIN !
 			std::cout << "_____________[BLOCKCHAIN WILL BE UPDATED]____________";
-			
 			UpdateBlockchain(filePath);
+			std::cout << "_____________[STORAGES WILL BE UPDATED]____________";
+			// UPDATE ROUGHLY CONTRACTSTATES... 
+			for (const auto& entry : std::experimental::filesystem::directory_iterator("sc")) 
+			{
+				char crtpath[255];
+				strcpy(crtpath, (const char*)(entry.path().string().c_str()));
+				std::ostringstream s;
+				s << crtpath << ".sf";
+				if (FileExists(s.str().c_str())) {
+					std::cout << "UPDATIN STORAGE" <<  std::endl;
+					UpdateStatesFromSafeStorage(crtpath);
+				}
+				else {
+					std::cout << s.str()<< "not existing " << std::endl;
+				}
+				
+			}
 		}
 		else
 		{
@@ -54,7 +75,15 @@ void ProccessBlocksFile(const char * filePath)
 			else
 				perror("Error renaming file");
 
+			// clear temp file
 			remove("utxos\\tmp");
+			// clear .sf storage file 
+			DeleteFilesWithExtension("sc", ".sf");
+			/*
+			std::string command = "del ";
+			std::string path = "sc\\*.sf";
+			system(command.append(path).c_str());
+			*/
 			return;
 
 		}
@@ -188,7 +217,7 @@ bool VerifyBlocksFile(const char * filePath, uint32_t lastOfficialindex, uint32_
 		uint32_t bsize = boff2 - boff1;
 		std::cout << "block size is " << bsize << std::endl;
 		// verify 
-		if (!IsBlockValid(cBlock,lBlock,firstfblockindex,MIN_TIMESTAMP, bsize, reqtarget))
+		if (!IsBlockValid(cBlock,lBlock,firstfblockindex,MIN_TIMESTAMP, bsize, reqtarget, filePath))
 		{
 			free(lBlock);
 			free(cBlock);
@@ -271,12 +300,13 @@ uint32_t GetRequiredTimeStamp(int index , uint32_t firstbfIndex, unsigned char *
 
 
 //IsBlockValid(Block b, Block prevb, uint MIN_TIME_STAMP, byte[] HASHTARGET, byte[] reqtarget, List<UTXO> vUTXO)
-bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblockindex, uint32_t MIN_TIME_STAMP, uint32_t bsize, unsigned char * reqtarget)
+bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblockindex, uint32_t MIN_TIME_STAMP, uint32_t bsize, unsigned char * reqtarget, 
+	const char * filePath)
 {
 	PrintBlockInfo(b);
 	uint32_t bindex = GetBlockIndex(b);
 	// [0] verify hash root 
-	unsigned char * ublock = (unsigned char *)malloc(bsize - 36);
+	
 	unsigned char buff[36];
 	// memcpy everything except hash & nonce 
 	/*
@@ -285,16 +315,21 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 	*/
 	
 	// there is something wrong with sha256 func() when existing txs . 
+	unsigned char* ublock = (unsigned char*)malloc(bsize - 36);
+	memset(ublock, 0, bsize - 36);
+
 	memcpy(ublock, b, 4);
-	memcpy(ublock+4, b+36, 68); 
+	memcpy(ublock + 4, b + 36, 68);
 	memcpy(ublock + 72, b + 108, bsize - 108);
+
 	Sha256.init();
+	//PrintRawBytes(ublock, bsize - 36);
 	Sha256.write((char *)ublock, bsize - 36); 
 	memcpy(buff, Sha256.result(), 32);
 	if (memcmp(buff, GetBlockHash(b), 32) != 0)
 	{
-		PrintRawBytes(b, bsize);
-		std::cout << "[Block Refused] Wrong hash root" << std::endl; 
+		
+		std::cout << "[Block Refused] Wrong hash root "<< bsize << " size " << std::endl;
 		printHash(buff);
 		printHash(GetBlockHash(b));
 		free(ublock);
@@ -345,7 +380,7 @@ bool IsBlockValid(unsigned char * b, unsigned char * prevb, uint32_t firstblocki
 	{
 		unsigned char * txp = GetBlockTransaction(b, i); // don't need to free it. it's in b mem.
 		
-		if ( !IsTransactionValid(txp, firstblockindex - 1, &gas, bindex, i)  )
+		if ( !IsTransactionValid(txp, firstblockindex - 1, &gas, b, i, filePath)  )
 		{
 			std::cout << "[Block Refused] Transaction not valid." << std::endl; 
 			return false;
