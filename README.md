@@ -257,7 +257,7 @@ Going further with a basic call and stack mechanism :
           func:
           PUSH EBP
           MOV EBP,ESP
-          MOV EDX, [EBP+4]
+          MOV EDX, [EBP+8]
           POP EBP
           RETP 4
           
@@ -265,9 +265,9 @@ This asm code will :
 * set register A value to 16
 * left shift register A data, so multiplying itself by 2
 * push 4 bytes of register A content to the stack
-* jump to func label address 
-* moving last four bytes of the stack to register D value
-* return and increment stack pointer by 4
+* jump to func label address, pushing EIP value 
+* moving pshed eax content in the stack to register D value
+* return and increment stack pointer by 4 
 * set register C value to 0
 * increment C value by 1
 * halt the vm 
