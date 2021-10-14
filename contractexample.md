@@ -64,7 +64,7 @@ Just repeat this asm code to write the art buffer ...etc.
 ## Iterate through account data
 
 To read the contract storage, the only instruction you should know is **STRDB** . A mnemonic for "STORAGE-READ-BYTES". 
-In the same way STAPP instruction works, STRDB will use general registers value as arguments to the read proccess. This design was choosen because of the limit of OPCODE map.
+In the same way STAPP instruction works, STRDB will use general registers value as arguments to the read proccess. This design was choosen because of the limitation of instruction mapping, an instruction without operands will take less slots, currently one.
 
 This example will check if an account possess a given art. Arguments of the call will be the art pointer in the storage and the account pointer in the storage. 
 
