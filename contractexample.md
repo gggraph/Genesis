@@ -31,9 +31,92 @@ The contract will be called BIMMARKET. Here the promises:
 
 ## Account registration
 
+The first thing we want to do is to register blockchain user to the art market. Somehow, blockchain user are just SECP256K1 public key stored inside blocks, also inside utxos files data. We will append roughly public keys to its **smartcontract storage : the only file a smartcontract can write to.**
+
+Because we want the user able to possess a specific amount of arts, we said 100, we will also allocate a buffer of 400bytes to its account, every **4bytes in this array are pointer to art data inside contract storage**, admitting an art was stored at address 0xff, possessing this art is like having value 0xff in a readable way inside the wallet struct.
+
+To update storage states of a contract, there is some specific instructions: 
+- **STAPP** will append data to file. EAX value referencing the vm memory address where bytes to write start, ECX referecing the element count. 
+- **STADD** will increment a specific byte in the file. EAX value referencing the vm memory address to start reading, ECX the element count and EDX the start address of the storage to write . 
+- **STAD4** will increment an unsigned integer in the file. Arguments are stored inside same registers of STADD. Note that element count depend of element size.
+
+Because we want to know the struct of data during reading proccess, we will also add a header byte to the storage determining if next bytes are part of an art struct or wallet struct. 
+
+Appending the key admitting public key data as been pushed before REGISTER call : 
+
+```
+    REGISTER:
+    ; [OBTAIN POINTER TO PUBLIC KEY INSIDE THE VM STACK] 
+    mov ebp, esp
+    mov eax, ebp
+    ; [A SECP256K1 PUBLIC KEY IS 64 BYTES SO TELL WE WILL APPEND 64 BYTES TO STORAGE] 
+    mov ecx, 64
+    ; [WRITTING INSTRUCTION]
+    stapp
+    ; [HALT THE VM]
+    hlt
+```
+
+Voilà, appending to storage is quite simple. The storage file is seeked to end. Then append number of element from a memory address stored in register A, the count of element is stored in register C.  
+
+Just repeat this asm code to write the art buffer ...etc. 
+
 ## Iterate through account data
 
-## Art registration
+To read the contract storage, the only instruction you should know is **STRDB** . A mnemonic for "STORAGE-READ-BYTES". 
+In the same way STAPP instruction works, STRDB will use general registers value as arguments to the read proccess. This design was choosen because of the limit of OPCODE map.
+
+This example will check if an account possess a given art. Arguments of the call will be the art pointer in the storage and the account pointer in the storage. 
+
+```
+    IS_ART_HOLDER:
+    push ebp
+    mov ebp, esp
+    pop ebp
+    retp 8
+```
+
+This label will be designed to be called and not jumped. So pointers arguments will start at +0x8 from stack pointer. +0x4  will be a stored base pointer. +0x0 is a stored eip value. Because we will push two integers to the stack, we can clean arguments when returning incrementing stack pointer by 8 bytes after popping eip. 
+
+Because possessed arts buffer of an account is 400 bytes length. We will read 4 bytes 100 times comparing result with art pointer argument.
+
+```
+    ; [RESERVE DOUBLE WORD FOR CONTRACT READING] 
+    intbufffer dd 0
+    
+    IS_ART_HOLDER:
+    push ebp
+    mov ebp, esp
+    ; [COPY ARTS BUFFER POINTER TO EAX]
+    mov eax, [ebp+8]
+    add eax, 68     ; admitting last 68bytes are public key and utxo pointer
+    ; [ITERATE 100 TIMES]
+    mov ebx, 100 
+    ; [SET READ BUFFER] 
+    mov edx, intbuffer
+    ; [READ 4 BYTES EACH TIMES] 
+    mov ecx, 4
+    .loop:
+    ; [BREAK LOOP IF EBX EQUALS 0, END READING STORAGE, HALT VM WITH ERROR OPCODE]
+    cmp ebx, 0
+    je .badend
+    ; [READ]
+    strdb
+    ; [USE ESI TO COMPARE WITH ART POINTER]
+    mov esi, dword[intbuff]
+    ; [IF ART POINTER IS EQUALS TO BUFFER, RETURN THE FUNCTION]
+    cmp esi, [ebp+12]
+    je .end
+    ; [UPDATE POINTER AND LOWER COUNTER]
+    add eax, 4
+    dec ebx
+    .badend:
+    err
+    .end:
+    pop ebp
+    retp 8
+```
+
 
 ## Contract reversibility
 
