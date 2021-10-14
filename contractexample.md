@@ -1,8 +1,8 @@
-# Getting deeper inside DAPP writting
+# Getting deeper inside DAPP writing
 
 ## Overview
 
-To make more understandable the proccess of writing a smartcontract and the functionnality and limitations of the Genesis VM, 
+To make more understandable the proccess of writing a smartcontract and the functionnalities and limitations of the Genesis VM, 
 we will comment step by step a light smart contract which acts as an art market. 
 
 The contract will be called BIMMARKET. Here the promises:
@@ -17,27 +17,128 @@ The contract will be called BIMMARKET. Here the promises:
 
 - Every art holder can update price of its art every week, and cannot go more than 4x its current price. This is like a basic market regulation. 
 
-- To obtain propriety of an art data, there will be actually 3 ways. It will depend of market mode flag of the art:  
-  The **private market** mod will make **arts buyable only with permissions of current holders**. Theirs SECP256K1 signatures is needed during CRT creation proccess.  
-  The **savage market** mod will make **arts buyable at its current price without any permission**. Every registered account can obtain the art at any time if they have
-  a suffisant sold. 
-  The **bid market** mod will let accounts compete against each other to obtain the art propriety during a laps of time decided by the holder. When the bid end, 
-  the art will be obtainable by the highest bidder. The holder can set a minimum price. 
+- To obtain property of an art data, there will be actually 3 ways. It will depend of market mode flag of the art:  
+  The **private market** mod will make **arts buyable only with permissions of current holder**. Theirs SECP256K1 signatures is needed during CRT creation proccess. 
+  
+  The **savage market** mod will make **arts buyable at its current price without any permission**. Every registered account can obtain the art at any time if they   have a suffisant sold. 
+  
+  The **bid market** mod will let accounts compete against each other to obtain the art property during a laps of time decided by the holder. When the bid end, 
+  the art will be obtainable by the highest bidder. The holder can also set a minimum price. 
   
  - Price of art is in native cryptocurrency. This is just a simple 1:1 ratio. An art priced as 100 will cost to the buyer 100 native crypto-currency.
 
-**Last but not least, the contract will be 100% written in Genesis contract assembly langage with the use of GenesisExplorer.exe. The block validation protocol of Genesis 
-software will not be changed. It will just be a series of bytecodes inside a transaction somewhere in the blockchain!**
+**Last but not least, the contract will be 100% written in Genesis contract assembly langage with the use of GenesisExplorer.exe. The block validation protocol of Genesis software will not be changed. It will just be a series of bytecodes inside a transaction somewhere in the blockchain!**
 
-#### Registration example
+## Account registration
 
-#### Iterate through account data
+## Iterate through account data
 
-#### Art registration
+## Art registration
 
-#### Contract reversibility
+## Contract reversibility
 
-## Final view of the whole code
+Because this is never a good idea to prevent validation of a downloaded block series where block height starts lower than node's current highest official block, **a blockchain software should always have a way to downgrade its actuality to a previous state.**  
+
+Where default BTC transaction cancelling is straightforward, lowering the amount of the receiver sold and adding back the amount to sender, so basically just negating the amount value, reversing machine code instructions could be a lot more difficult! For this, Genesis virtual machine has actually two mods , once enabled, machine instructions will act differently. Those mods can only be SET or UNSET during a downgrading proccess with OPCODES **REVN** and **REVD** . 
+
+**REVN** will SET/UNSET **REV NORMAL MOD**. If this mod is enabled, every write instruction to contract storage will be negated. So incrementing bytes at address 100 of the storage will decrement instead. Appending to storage will truncating instead; of course, for this case, truncating happen only during a blockchain upgrade. 
+
+**REVD** will SET/UNSET **REV DEEP MOD**. This mod is a lot more complex. It will reverse a lot of instructions. ADD<>SUB, MUL<>DIV, ROL<>ROR, INC<>DEC ..etc.. If you want to use this mod, be aware of your code pattern and potential loss of informations. Here is a loop example: 
+
+```
+  PATTERN:
+  revd
+  xor ecx, ecx
+  mov eax, ecx
+  inc eax
+  add ecx, 10
+  .loop:
+  jecxz .end
+  dec ecx
+  mul 2
+  jmp .loop
+  .end:
+  hlt
+  
+```
+The 32-bit value of A register will be 1024.  
+This current code depends of registers' value at vm initialisation. In REVD mod, it will result of register A equal 0. Starting EAX at -1, dividing 10 times...
+**Only ECX value is correct, starting loop at -10, incrementing by 1 until 0.** 
+
+Here is another one which depend of values kept from previous contract request . It can be interesting to use this mod in specific case, but general registers values should be stored and loaded at initialisation when needed.  
+
+```
+  PATTERN:
+  call LOAD_REGISTERS
+  revd
+  xor ecx, ecx
+  add ecx, 10
+  .loop:
+  jecxz .end
+  add eax, 25
+  jmp .loop
+  .end:
+  revd
+  call SAVE_REGISTERS
+  hlt
+  
+  ; note here that because of stapp instruction, general registers can only be saved from the stack. 
+  SAVE_REGISTERS:
+  push ebp
+  mov ebp, esp
+  pusha
+  mov eax, ebp
+  sub eax, 0x20
+  xor edx, edx
+  mov ecx, 0x20
+  stapp 
+  popa
+  pop ebp
+  ret
+  
+  LOAD_REGISTERS:
+  xor eax, eax
+  xor edx, edx
+  mov ecx, 0x20
+  strdb
+  ret
+```
+Whatever is EAX after LOAD_REGISTERS call, the virtual machine will correctly negate the loop inside PATTERN, getting back EAX to its older state. 
+
+**One final instruction to make your code reversible is the conditionnal jump instruction JMR.** 
+
+This instruction will proccess a memory jump only during a downgrading proccess. This is the way-to-go to easily set up mirrored instructions in your contract!
+Not the most elegant however, increasing also the cost of the contract submission because of an heavier contract. 
+
+```
+  PATTERN:
+  xor ecx, ecx
+  jmr MIRROR
+  mov eax, ecx
+  .loop:
+  jecxz .end
+  add eax, 10
+  dec ecx
+  jmp .loop
+  .end:
+  hlt
+  
+  MIRROR:
+  mov eax, 110
+  .loop:
+  jecxz .end
+  sub eax, 10
+  dec ecx
+  jmp .loop
+  .end:
+  hlt
+  
+```
+
+**Last words, reverting instructions code depends to contract writer. Because machines usually overwrite their memory, loss of informations is part of the nature of 
+computers. Writing piece of codes in blockchain environment is fighting against time and the mutability of elements. Overwriting contract storage is not allowed, here is why there is no simple write instructions to disk space. Writing smartcontract is writing symettric code. Welcome to the world of palindrome langages.**
+
+## Final view of the whole asm code
 
 ```
 ; -------------------------------------------------------------------
@@ -165,8 +266,8 @@ call addnptrtoart
 jmp .pptrnext
 .zeropptr:
 mov ecx, 4
-xor eax, eax
-mov eax, [eax]
+xor ebx, ebx
+mov eax, [ebx]
 stapp    ; append 0 PPTR
 jmp .pptrnext
 .pptrnext:
