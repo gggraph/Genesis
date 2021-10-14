@@ -342,7 +342,7 @@ WILL HAVE TO CRAFT BY YOURSELFT THE TRANSACTION HEADER DATA** because Genesisexp
 List of OPCODES can be read at vmopcode1.ini. Don't modify this file or CST binary conversion will not work properly! 
 
 <p align="center">
-[READ MORE ABOUT CONTRACT ASSEMBLY](https://github.com/gggraph/genesis/blob/main/contractexample.md)
+[READ MORE ABOUT CONTRACT ASSEMBLY](contractexample.md)
 </p>
  
 **>>>>>>>> Have fun with the Genesis Virtual Machine! <<<<<<<** 
