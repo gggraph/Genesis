@@ -365,8 +365,8 @@ call addnptrtoart
 jmp .pptrnext
 .zeropptr:
 mov ecx, 4
-xor ebx, ebx
-mov eax, [ebx]
+xor eax, eax
+mov eax, [eax]
 stapp    ; append 0 PPTR
 jmp .pptrnext
 .pptrnext:
@@ -438,15 +438,6 @@ jmp .cmploop
 .end:
 pop ebp
 retp 8 
-
-verifyintegrityitem:
-; args : item ptr +8 ; pukey ptr +12
-push ebp
-mov ebp, esp
-
-pop ebp
-retp 8
-
 
 additemtowallet: ; ITEM PTR +8 , WALLET PTR +12
 push ebp
@@ -869,15 +860,101 @@ stad4
 hlt
 
 bid: 
+; art ptr +4 ; bid high price +8 ; off price +12 ; off wptr +16
+push ebp
 mov ebp, esp 
+; [0] verify art in bid mod
+xor eax, eax
+mov dword[uintbuff], eax 
+mov eax, [ebp+4] 
+mov ecx, 1
+mov edx, uintbuff
+strdb 
+mov edx, [uintbuff]
+cmp edx, 2
+jb badend
+; [1] verify time is not over
+mov eax, [ebp+4] 
+add eax,  93
+mov ecx, 4
+strdb
+mov ebx, [uintbuff]
+clock
+cmp ebx, eax
+ja badend
+; [2] verify bid high price is correct
+mov eax, [ebp+4] 
+add eax, 101
+strdb
+mov ebx, [uintbuff]
+mov eax, [ebp+8]
+cmp ebx, eax
+jne badend
+; [3] verify if new price offset is sup than 0 
+mov eax, [ebp+12] 
+cmp eax, 0
+jbe badend
+; [4] verify wallet integrity of bidder 
+mov eax, [ebp+4] 
+add eax, 105
+strdb
+mov eax, [uintbuff] 
+add eax, [ebp+16]
+; compare key  
+mov edx, pukeybuff
+txkey
+push pukeybuff
+push eax
+call verifyintegritywallet 
+; [5] update new bidder
+mov eax, [ebp+12]
+mov edx, [ebp+4]
+add edx, 101
+mov ecx, 1
+stad4
+add edx, 4
+mov eax, [ebp+16]
+stad4
 hlt
 
 startbid: 
-mov ebp, esp 
+; acc ptr + 4; art ptr + 8; new lock time +12; new min price +16
+push ebp
+mov ebp, esp
+; [0] verify wallet integrity 
+mov edx, pukeybuff
+txkey; move current transaction key to addr stored in edx
+push pukeybuff
+push dword [ebp+4]
+call verifyintegritywallet
+; verify if art is possessed
+push dword [ebp+4]
+push dword [ebp+8] ; repush because retp 8
+call isartpossessed
+; [1] verify art is not in bid mod
+xor eax, eax
+mov dword[uintbuff], eax 
+mov eax, [ebp+12] 
+mov ecx, 1
+mov edx, uintbuff
+strdb 
+mov edx, [uintbuff]
+cmp edx, 1
+ja badend
+; [2] update lock and min bid data
+mov eax, [ebp+12]
+mov edx, [ebp+4]
+add edx, 93
+mov ecx, 1
+stad4
+add edx, 4
+mov eax, [ebp+16]
+stad4
 hlt
 
 closebid:
-; art ptr +4 ; bid high price +8 ; bid wptr +12 ; holder wptr +16; curr lock time + 20
+; art ptr +4 ; bid high price +8 ; bid wptr +12 ; holder wptr +16; curr lock time + 20; min bid +24
+push ebp
 mov ebp, esp
 ; [0] verify art in bid mod
 xor eax, eax
@@ -897,7 +974,7 @@ strdb
 mov ebx, [uintbuff]
 clock
 cmp ebx, eax
-jb .end
+jb badend
 ; [2] verify if high price is correct. verify also if not 0 
 mov eax, [ebp+4] 
 add eax, 101
@@ -915,7 +992,7 @@ strdb
 mov ebx, [uintbuff]
 mov eax, [ebp+12]
 cmp ebx, eax
-jne .end
+jne badend
 ; [3.b] verify if lock time is  correct
 mov eax, [ebp+4] 
 add eax, 93
@@ -923,7 +1000,7 @@ strdb
 mov ebx, [uintbuff]
 mov eax, [ebp+20]
 cmp ebx, eax
-jne .end
+jne badend
 ; [3.c] verify if holder possess the art. 
 ; ITEM PTR +8 , WALLET PTR +12
 push dword[ebp+16]
@@ -955,7 +1032,11 @@ mov eax, [ebp+20]
 neg eax
 mov ecx, 1
 stad4
-add edx, 8 
+add edx, 4 
+mov eax, [ebp+24]
+neg eax
+stad4
+add edx, 4 
 mov eax, [ebp+8]
 neg eax
 stad4
