@@ -247,7 +247,7 @@ Going further with a basic call and stack mechanism :
 
           start:
           MOV  EAX, 16
-          SHL  EAX
+          SHL  EAX, 1
           PUSH EAX
           CALL func
           XOR ECX, ECX
