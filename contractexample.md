@@ -1,4 +1,4 @@
-# Getting deeper inside DAPP writing
+# Getting deeper inside dAPP writing
 
 ## Overview
 
@@ -117,6 +117,14 @@ Because possessed arts buffer of an account is 400 bytes length. We will read 4 
     retp 8
 ```
 
+### Note about writing instructions
+
+We don't want to update storage state during a block validation. Smartcontract states should only be updated during an official blockchain upgrade. Problem is 
+we want to read a predictible storage state during blocks validation if multiple contract requests happened in the blocks series, so the answer is **cache file** . 
+STADD, STAD4 and others instructions will not directly overwrite the contract storage but append the data to write to a **safe storage cache file**. 
+This file will contains every writing instructions that occured. When STRDB is called, Genesis software will read first current smartcontract storage then update the
+data from the writing instructions inside **safe storage file** that affect the memory range to read. The contract state will remain untouched. When blockchain
+upgrade, **safe storage instructions** will definitely be done to corresponding contract storage. 
 
 ## Contract reversibility
 
