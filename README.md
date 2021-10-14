@@ -297,6 +297,7 @@ Here is an example :
           HLT
           
           label2:
+          PUSH EBP
           MOV EBP, ESP
           MOV EAX, [EBP+4]
           HLT
