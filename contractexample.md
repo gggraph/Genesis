@@ -229,7 +229,7 @@ Not the most elegant however, increasing also the cost of the contract submissio
 ```
 
 **Last words, reverting instructions code depends to contract writer. Because machines usually overwrite their memory, loss of informations is part of the nature of 
-computers. Writing piece of codes in blockchain environment is fighting against time and the mutability of elements. Overwriting contract storage is not allowed, here is why there is no simple write instructions to disk space. Writing smartcontract is about writing symmetric code. Welcome to the world of palindrome-based langages.**
+computers. Writing piece of codes in blockchain environment is fighting against time and the mutability of elements. Overwriting contract storage is not allowed, here is why there is no simple way to write instructions to disk space. Writing smartcontract is about writing symmetric code. Welcome to the world of palindrome-based langages.**
 
 ## About complex contract, dress your contract interface
 
