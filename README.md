@@ -341,9 +341,8 @@ You can also mine your CST and CRTs, but it is currently work in progress. To ex
 WILL HAVE TO CRAFT BY YOURSELFT THE TRANSACTION HEADER DATA** because Genesisexplorer.exe cannot do it ! 
 List of OPCODES can be read at vmopcode1.ini. Don't modify this file or CST binary conversion will not work properly! 
 
-<p align="center">
 [READ MORE ABOUT CONTRACT ASSEMBLY](contractexample.md)
-</p>
+
  
 **>>>>>>>> Have fun with the Genesis Virtual Machine! <<<<<<<** 
 
