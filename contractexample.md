@@ -124,7 +124,7 @@ we want to read a predictible storage state during blocks validation if multiple
 STADD, STAD4 and others instructions will not directly overwrite the contract storage but append the data to write to a **safe storage cache file**. 
 This file will contains every writing instructions that occured. When STRDB is called, Genesis software will read first current smartcontract storage then update the
 data from the writing instructions inside **safe storage file** that affect the memory range to read. The contract state will remain untouched. When blockchain
-upgrade, **safe storage instructions** will definitely be done to corresponding contract storage. 
+upgrade, **safe storage instructions** will definitely be done to related contract storage. 
 
 ## Contract reversibility
 
@@ -228,6 +228,12 @@ Not the most elegant however, increasing also the cost of the contract submissio
 
 **Last words, reverting instructions code depends to contract writer. Because machines usually overwrite their memory, loss of informations is part of the nature of 
 computers. Writing piece of codes in blockchain environment is fighting against time and the mutability of elements. Overwriting contract storage is not allowed, here is why there is no simple write instructions to disk space. Writing smartcontract is writing symettric code. Welcome to the world of palindrome-based langages.**
+
+## About complex contract, dress your contract interface
+
+Because bimmarket contract works with large array of bytes as arguments for its methods, you cannot use GenesisExplorer.exe to write CRT. 
+The better way is to create your custom program to interact with the contract. It should not be that hard. Here is some fast UI to explore the contract
+storage and build from scratch some CRT. 
 
 ## Final view of the whole asm code
 
