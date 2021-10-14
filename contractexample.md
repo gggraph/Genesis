@@ -112,7 +112,7 @@ Not the most elegant however, increasing also the cost of the contract submissio
 
 ```
   PATTERN:
-  xor ecx, ecx
+  mov ecx, 10
   jmr MIRROR
   mov eax, ecx
   .loop:
