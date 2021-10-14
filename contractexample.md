@@ -1,4 +1,4 @@
-# Getting deeper inside dAPP writing
+# Deeper inside dAPP writing
 
 ## Overview
 
