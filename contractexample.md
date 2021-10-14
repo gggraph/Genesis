@@ -108,7 +108,7 @@ Whatever is EAX after LOAD_REGISTERS call, the virtual machine will correctly ne
 **One final instruction to make your code reversible is the conditionnal jump instruction JMR.** 
 
 This instruction will proccess a memory jump only during a downgrading proccess. This is the way-to-go to easily set up mirrored instructions in your contract!
-Not the most elegant however, increasing also the cost of the contract submission because of an heavier contract. 
+Not the most elegant however, increasing also the cost of the contract submission because of a heavier contract. 
 
 ```
   PATTERN:
