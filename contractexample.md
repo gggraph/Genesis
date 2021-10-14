@@ -231,7 +231,7 @@ computers. Writing piece of codes in blockchain environment is fighting against 
 
 ## About complex contract, dress your contract interface
 
-Because bimmarket contract works with large array of bytes as arguments for its methods, you cannot use GenesisExplorer.exe to write CRT. 
+Because bimmarket contract works with large array of bytes as arguments for its methods, using GenesisExplorer.exe to write CRT is not convenient. 
 The better way is to create your custom program to interact with the contract. It should not be that hard. Here is some fast UI to explore the contract
 storage and build from scratch some CRT. 
 
