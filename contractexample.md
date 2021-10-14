@@ -110,6 +110,8 @@ Because possessed arts buffer of an account is 400 bytes length. We will read 4 
     ; [UPDATE POINTER AND LOWER COUNTER]
     add eax, 4
     dec ebx
+    ; [GO TO NEXT ITERATION]
+    jmp .loop
     .badend:
     err
     .end:
