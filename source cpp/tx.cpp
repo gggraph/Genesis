@@ -152,12 +152,14 @@ bool VerifyDFT(unsigned char * TX, uint32_t blockindextime, int * gas)
 
 }
 
-bool FastApplyEXCH(uint32_t SUTXOP, uint32_t RUTXOP, uint32_t amount, int blockindextime, bool _rev) 
+// [USING EXCH ONLY USE TX CREATOR WALLET AS SENDER]  
+bool FastApplyEXCH(unsigned char * TX, uint32_t Receiver_ptr, uint32_t amount, int blockindextime, bool _rev) 
 {
 	unsigned char  sutxo[76];
-	unsigned char  rutxo[76];
-	GetVirtualUtxo(SUTXOP, blockindextime, sutxo);
-	GetVirtualUtxo(RUTXOP, blockindextime, rutxo);
+	unsigned char  rutxo[76]; 
+	GetVirtualUtxo(BytesToUint(TX), blockindextime, sutxo);
+	GetVirtualUtxo(Receiver_ptr, blockindextime, rutxo);
+	
 	if (amount > GetUtxoSold(sutxo)) {
 		std::cout << "EXCH CANNOT BE DONE. INSUFFISANT SOLD." << GetUtxoSold(sutxo);
 		return false;

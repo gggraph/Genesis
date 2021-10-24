@@ -1426,13 +1426,13 @@ int RunVM( int gas, int _guserlimit, unsigned char * block, unsigned char * TX, 
 				fclose(f);
 				gas += (int)BytesToUint(MEM + 0x08);
 				break;
-			case 44: // EXCH [ EAX : SUTXOP.   ECX : amount. EDX: RUTXOP - update zero flag ] rutxop should not be 0. 
-				break; // illegal stuff. should not be implemented
+			case 44: // EXCH [ ECX : amount. EDX: RUTXOP - update zero flag ] rutxop should not be 0. 
 				// there will be specific cond here this can be revert if _revn is set 
-				if (FastApplyEXCH(BytesToUint(MEM + 0x00), BytesToUint(MEM + 0x0C), BytesToUint(MEM + 0x08), blockindextime, _RevN)) {
+				if (FastApplyEXCH(TX, BytesToUint(MEM + 0x0C), BytesToUint(MEM + 0x08), blockindextime, _RevN)) {
 					SetBit(6, false, MEM + 0x28);
 				}
-				else {
+				else 
+				{
 					SetBit(6, true, MEM + 0x28);
 				}
 				break;
