@@ -56,7 +56,7 @@ all your peers IP. Genesis Blockchain only run on local environment even if its 
 to meet larger and public network. You can manually set IP:port for both starting a server and connecting to other
 machines, simply by editing the file. It is by default configured to local address 127.0.0.1 for testing purpose.
 
-![alt text](https://github.com/gggraph/genesis/blob/main/start%20command.png)
+![alt text](https://github.com/gggraph/genesis/blob/main/git-content/start%20command.png)
 
 Run executable, you can interact typing command. List of all available command are printed to console at start. 
 You can first try to run demo program entering **demo** . Create a wallet entering **createwallet** and start mine some blocks with 
@@ -201,7 +201,7 @@ A **CRT** ( Contract Request Transaction ). CRT is a transaction that run a smar
 
 To both write CRT and CST for the Genesis Blockchain, run GenesisExplorer.exe (which can be downloaded at /src/build). It looks like this:  
 
-![alt text](https://github.com/gggraph/genesis/blob/main/TRANSACTION%20VIEWER%20B.png)
+![alt text](https://github.com/gggraph/genesis/blob/main/git-content/contracteditor.png)
 
 ### Write a simple CST code
 
