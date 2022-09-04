@@ -234,7 +234,7 @@ computers. Writing piece of codes in blockchain environment is fighting against 
 ## Dress your contract interface
 
 <p align="center">
-  <img src=git-content/marketdisp.gif width="400" height="400"/>
+  <img src=../git-content/marketdisp.gif width="400" height="400"/>
 </p>
 
 Bimmarket contract works with large array of bytes as arguments for its methods, using GenesisExplorer.exe to write CRT is not convenient. 
