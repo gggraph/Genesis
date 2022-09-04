@@ -231,11 +231,14 @@ Not the most elegant however, increasing also the cost of the contract submissio
 **Last words, reverting instructions code depends to contract writer. Because machines usually overwrite their memory, loss of informations is part of the nature of 
 computers. Writing piece of codes in blockchain environment is fighting against time and the mutability of elements. Overwriting contract storage is not allowed, here is why there is no simple way to write to disk space. Writing smartcontract is about writing symmetric code. Welcome to the world of palindrome-based langages.**
 
-## About complex contract, dress your contract interface
+## Dress your contract interface
 
-Because bimmarket contract works with large array of bytes as arguments for its methods, using GenesisExplorer.exe to write CRT is not convenient. 
-The better way is to create your custom program to interact with the contract. It should not be that hard. Here is some fast UI to explore the contract
-storage and build from scratch some CRT. 
+<p align="center">
+  <img src=git-content/marketdisp.gif width="400" height="400"/>
+</p>
+
+Bimmarket contract works with large array of bytes as arguments for its methods, using GenesisExplorer.exe to write CRT is not convenient. 
+The better way is to create your custom program to interact with the contract. **an external that can interact with bimmarket contract**
 
 ## Final view of the whole asm code
 
