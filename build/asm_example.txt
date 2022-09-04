@@ -1,0 +1,34 @@
+                  ; HERE IS AN EXAMPLE ASM CODE
+                  ; FOR GENESIS VIRTUAL MACHINE
+                  ;         V 1.0
+
+
+myvariable dd 8 ; put uint 8 in memory right here
+ 
+main:
+mov ecx, 10
+
+loop:
+cmp ecx, 0
+je  end
+mov eax, [myvariable]
+mov eax, [myvariable] ; copy myvariable memory to register A
+add dword[myvariable], eax ; add myvariable by itself
+dec ecx               ; repeat  it 10 times
+jmp loop
+
+end:
+jmp end
+
+; here is an entry to use with CRT code
+customentry:
+mov ebp, esp
+mov eax, ebp
+add eax, 4
+mov ecx, 4
+stapp
+hlt
+
+; put your entries here using # and the label name
+#main
+#customentry
